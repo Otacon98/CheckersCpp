@@ -10,8 +10,8 @@ using namespace std;
 
 int main() {
 	
-	short input = 18;
-	while(input){
+	short input = 0;
+	while(input != 5){
 		cout << "B I E N V E N I D O\n\n";
 		cout << "[1]. Humano contra Humano\n";
 		cout << "[2]. Humano contra Bot\n";
@@ -35,10 +35,7 @@ int main() {
 				instrucciones();
 				break;
 			case 5:
-				cout << "Saliendo del juego . . . ";
-				usleep(1000000);
-				
-				input = 0;
+				salir();
 				break;
 			default:
 				break;
