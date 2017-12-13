@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cstdio>
+#include <time.h>
+#include <unistd.h>
 using namespace std;
 
 string blanco="░";
@@ -7,6 +9,10 @@ string negro="█";
 string piezaBlanca = "O";
 string piezaNegra = "X";
 string vacio = " ";
+
+void resizeTerminal(){
+	cout << "\e[8;27;85t";
+}
 
 void gotoxy(int x,int y){
 	printf("%c[%d;%df",0x1B,y,x);
@@ -283,17 +289,51 @@ void Tablero::imprimirCasillas(){
 	}
 	
 	// Fila 8 - mamalo hendry	
+	for(int i = 0; i<3; i++ ){
+		gotoxy(0,i+22);
+		cout << negro << negro << negro << negro << negro;
+	}
+	for(int i = 0; i<3; i++ ){
+		gotoxy(6,i+22);
+		cout << blanco << blanco << blanco << blanco << blanco;
+	}
+	for(int i = 0; i<3; i++ ){
+		gotoxy(11,i+22);
+		cout << negro << negro << negro << negro << negro;
+	}
+	for(int i = 0; i<3; i++ ){
+		gotoxy(16,i+22);
+		cout << blanco << blanco << blanco << blanco << blanco;
+	}
+	for(int i = 0; i<3; i++ ){
+		gotoxy(21,i+22);
+		cout << negro << negro << negro << negro << negro;
+	}
+	for(int i = 0; i<3; i++ ){
+		gotoxy(26,i+22);
+		cout << blanco << blanco << blanco << blanco << blanco;
+	}
+	for(int i = 0; i<3; i++ ){
+		gotoxy(31,i+22);
+		cout << negro << negro << negro << negro << negro;
+	}
+	for(int i = 0; i<3; i++ ){
+		gotoxy(36,i+22);
+		cout << blanco << blanco << blanco << blanco << blanco;
+	}
+	
+	
 	short i = 3;
 	// Imprimiendo coordenadas horizontales
 	for(int a = 65; a<73; a++){ // A == 65 - ASCII code
-		gotoxy(i,22);
+		gotoxy(i,26);
 		cout << (char)a; 
 		i = i+5;
 	}
 	
 	short aux = 2;
 	// Imprimiendo coordenadas verticales 
-	for(int i = 0;i<7;i++){
+	for(int i = 0;i<8;i++){
 		gotoxy(43,aux);
 		cout << i;
 		aux = aux +3;
@@ -326,19 +366,19 @@ void humanoVShumano(){
 	clear();
 	tablero.imprimirTablero();
 	
-	gotoxy(52, 5);
+	gotoxy(55, 5);
 	cout << "Turno del jugador " << turno;
 	
-	gotoxy(52, 6);
+	gotoxy(55, 6);
 	cout << "Sus fichas son: O";
 	
-	gotoxy(52,7);
+	gotoxy(55,7);
 	cout << "Esperando jugada";
 	
-	gotoxy(45,10);
+	gotoxy(47,10);
 	cout << "Introduzca primera coordenada (A-H)";
 	
-	gotoxy(60,11);
+	gotoxy(65,11);
 	cin >> coordH;
 }
 
@@ -348,9 +388,20 @@ void humanoVSbot(){}
 
 void botVSbot(){}
 
-
+void info(){}
 
 void salir(){
-	cout << "\nSaliendo del juego . . .";
+	
+	cout << "\nSaliendo del juego" << endl;
+	usleep(1000000);
+	gotoxy(20,19);
+	cout << ". " << endl;
+	usleep(1000000);
+	gotoxy(22,19);
+	cout << ". " << endl;
+	usleep(1000000);
+	gotoxy(24,19);
+	cout << ". " << endl;
+	usleep(2000000);
 }
 
