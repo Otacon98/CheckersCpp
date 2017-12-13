@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdio>
 #include <time.h>
+#include <wchar.h>
 #include <unistd.h>
 using namespace std;
 
@@ -13,12 +14,11 @@ string vacio = " ";
 void resizeTerminal(){
 	cout << "\e[8;27;85t";
 }
-
 void gotoxy(int x,int y){
 	printf("%c[%d;%df",0x1B,y,x);
 }
-void clear(){ 
-	cout << "\033[2J\033[1;1H"; 
+void clearScreen(){
+	cout << "\033[2J";
 }
 
 // Clase tablero
@@ -46,7 +46,6 @@ class Tablero{
 			
 			
 };
-
 void Tablero::imprimirCasillas(){
 	// Esto es infernal de leer, analicen uno y modulenlo, como explique en la funcion "imprimirTablero"
 	
@@ -357,13 +356,12 @@ void Tablero::imprimirTablero(){
 	//imprimirPiezas(tablero);
 };	
 
-
 void humanoVShumano(){
 	
 	char coordH;
 	int turno = 1;
 	Tablero tablero;
-	clear();
+	clearScreen();
 	tablero.imprimirTablero();
 	
 	gotoxy(55, 5);
@@ -382,13 +380,64 @@ void humanoVShumano(){
 	cin >> coordH;
 }
 
-void instrucciones(){}
+void instrucciones(){
+	short aux = 0;
+	
+	do{
+		clearScreen();
+		gotoxy(30,6);
+		cout << "\033[1;38m¿Cómo se juega?\033[0m";
+		gotoxy(25,8);
+		cout << "Desarrollado como proyecto para";
+		gotoxy(25,9);
+		cout << "la asignatura Estructura de Datos";
+		gotoxy(25,11);
+		cout << "\033[1;4mIntegrantes:\033[0m\n";
+		gotoxy(35,13);
+		cout << "Salazar Fernando";
+		gotoxy(35,14);
+		cout << "Flores Hendry";
+		gotoxy(35,15);
+		cout << "Rodríguez Angel";
+		gotoxy(25,17);
+		cout << "Presione \033[1;20m'Enter'\033[0m para volver al menú";
+		gotoxy(62,17);
+		getchar();
+		aux = getchar();
+	}while(aux != 10);
+	clearScreen();
+}
 
 void humanoVSbot(){}
 
 void botVSbot(){}
 
-void info(){}
+void info(){
+	short aux = 0;
+	do{
+		clearScreen();
+		gotoxy(30,6);
+		cout << "\033[1;38mD A M A S   C H I N A S\033[0m";
+		gotoxy(25,8);
+		cout << "Desarrollado como proyecto para";
+		gotoxy(25,9);
+		cout << "la asignatura Estructura de Datos";
+		gotoxy(25,11);
+		cout << "\033[1;4mIntegrantes:\033[0m\n";
+		gotoxy(35,13);
+		cout << "Salazar Fernando";
+		gotoxy(35,14);
+		cout << "Flores Hendry";
+		gotoxy(35,15);
+		cout << "Rodriguez Angel";
+		gotoxy(25,17);
+		cout << "Presione \033[1;20m'Enter'\033[0m para volver al menu";
+		gotoxy(63,17);
+		getchar();
+		aux = getchar();
+	}while(aux != 10);
+	clearScreen();
+}
 
 void salir(){
 	

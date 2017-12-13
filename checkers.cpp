@@ -10,9 +10,12 @@ using namespace std;
 
 int main() {
 
+	setlocale(LC_ALL, "es_ES");
 	resizeTerminal();
 	short input = 0;
+	
 	while(input != 6){
+		clearScreen();
 		gotoxy(33,6);
 		cout << "\033[1;20mB I E N V E N I D O\033[0m\n";
 		gotoxy(30,7);
@@ -26,7 +29,7 @@ int main() {
 		gotoxy(30,13);
 		cout << "\033[1;38m[4].\033[0m Instrucciones\n";
 		gotoxy(30,14);
-		cout << "\033[1;38m[5].\033[0m Informacion\n";
+		cout << "\033[1;38m[5].\033[0m Información\n";
 		gotoxy(30,15);
 		cout << "\033[1;38m[6].\033[0m Salir\n";
 		gotoxy(30,17);
@@ -47,12 +50,15 @@ int main() {
 				instrucciones();
 				break;
 			case 5:
+				clearScreen();
 				info();
 				break;
 			case 6:
 				salir();
 				break;
 			default:
+				// Aqui se debe validar el buffer del input o alguna magia negra para que no explote
+				// cuando le tiras en el menu algo tipo "123456734980"
 				break;
 		}
 	}
