@@ -25,7 +25,8 @@ void clearScreen(){
 class Tablero{
 
 	private:
-		string tablero[8][8];
+		string tablero[8][8]; // aloja a las piezas.
+		int turno; // Define el turno y de quien es el turno.
 
 	public:
 		//Constructor
@@ -40,11 +41,12 @@ class Tablero{
 						tablero[i][j] = vacio;
 				}
 			}
+			turno = 0;
 		};
 		void imprimirCasillas();
 		void imprimirTablero();
 		void imprimirPiezas();
-
+		bool moverPieza(int,int,int,int);
 
 };
 
@@ -99,35 +101,20 @@ void Tablero::imprimirCasillas(){
 }
 void Tablero::imprimirPiezas(){
 
-	for (int i = 1; i < 25; i+=3) {
-		for (int j = 0; j < 41; j+=5) {
+	// Esta funcion no valida, Solo imprime las piezas
 
-			if (j == 0) j++; // Esto es una validacion magica.
-				// Estos dos primeros if dibujan SOLO las piezas blancas de el primer lado del tablero.
 
-				if (j % 2 != 0 && (i == 1 || i == 7)) {
-					gotoxy(j,i+1);
-					cout << blanco << blanco << piezaBlanca << blanco << blanco;
+			for (int k = 0; k < 8; k++) {
+				for (int l = 0; l < 8; l++) {
+
+					if (tablero[k][l] != vacio) {
+
+							gotoxy((l*5) + 3, (k*3) + 2);
+							cout << tablero[k][l];
+					}
 				}
-				if (j % 2 == 0 && (i == 4)){
-					gotoxy(j,i+1);
-					cout << blanco << blanco << piezaBlanca << blanco << blanco;
-				}
+			}
 
-				// Estos dos bueno... Hacen lo opuesto al primer par de if.
-
-				if (j % 2 != 0 && (i == 19)){
-
-					gotoxy(j,i+1);
-					cout << blanco << blanco << piezaNegra << blanco << blanco;
-				}
-				if ( j % 2 == 0 && (i == 16 || i == 22)){
-
-					gotoxy(j,i+1);
-					cout << blanco << blanco << piezaNegra << blanco << blanco;
-				}
-		}
-	}
 }
 void Tablero::imprimirTablero(){
 	// Angel - 10/12/17 - 6:50pm
@@ -148,6 +135,13 @@ void Tablero::imprimirTablero(){
 	imprimirCasillas();
 	imprimirPiezas();
 };
+
+bool Tablero::moverPieza(int x, int y, int newX, int newY){
+
+
+
+}
+
 
 void humanoVShumano(){
 
