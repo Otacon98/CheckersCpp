@@ -13,7 +13,7 @@ int main() {
 	setlocale(LC_ALL, "es_ES");
 	resizeTerminal();
 	short input = 0;
-	
+
 	while(input != 6){
 		clearScreen();
 		gotoxy(33,6);
@@ -36,7 +36,7 @@ int main() {
 		cout << "\033[1;4m¿Qué desea hacer?:\033[0m\n";
 		gotoxy(51,17);
 		cin >> input;
-		
+
 		switch(input){
 			case 1:
 				humanoVShumano();
@@ -62,6 +62,6 @@ int main() {
 				break;
 		}
 	}
-	
+
 	return 0;
 }
