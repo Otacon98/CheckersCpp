@@ -3,6 +3,7 @@
 #include <time.h>
 #include <wchar.h>
 #include <unistd.h>
+#include <math.h>
 using namespace std;
 
 string blanco="░";
@@ -47,6 +48,7 @@ class Tablero{
 		void imprimirCasillas();
 		void imprimirTablero();
 		void imprimirPiezas();
+		int contarPiezas(string);
 		bool moverPieza(int,int,int,int);
 		//Getters
 		int getTurno();
@@ -105,6 +107,7 @@ void Tablero::imprimirCasillas(){
 		aux = aux +3;
 	}
 
+
 }
 void Tablero::imprimirPiezas(){
 
@@ -142,13 +145,50 @@ void Tablero::imprimirTablero(){
 	imprimirCasillas();
 	imprimirPiezas();
 };
+int Tablero::contarPiezas(string pieza) {
+	int count = 0;
+	for (int i = 0; i < 8; i++) {
+		for (int k = 0; k < 8; k++) {
+			if (tablero[i][k] == pieza) {
+				count++;
+			}
+		}
+	}
+	return count;
+}
 
 bool Tablero::moverPieza(int x, int y, int newX, int newY){
+
+	// Validaciones locas.
+
+	if (turno % 2 == 0 && tablero[x][y] != piezaBlanca)
+		return false;
+	
+	if (turno % 2 != 0 && tablero[x][y] != piezaNegra)
+		return false;
+
+	if( newX % 2 == 0 && newY % 2 == 0 )
+		return false;
+
+	if( newX % 2 != 0 && newY % 2 != 0 )
+		return false;
+
+	if (tablero[newX][newY] == tablero[x][y])
+		return false;
+
+	if ( (abs(x - newX)) != 1 )
+		return false;
+
+	if ( (abs(y - newY)) != 1 )
+		return false;
+
 
 	tablero[newX][newY] = tablero[x][y];
 	tablero[x][y] = " ";
 
 	turno++;
+
+	return true;
 
 
 
@@ -168,31 +208,41 @@ void humanoVShumano(){
 		tablero.imprimirTablero();
 
 		gotoxy(55, 5);
-		if (tablero.getTurno() % 2 == 0)
-			cout << "Turno de las blancas";
-		else
-			cout << "Turno de las negras";
+		if (tablero.getTurno() % 2 == 0){
 
-		gotoxy(55, 6);
-		cout << "Sus fichas son: O";
+			cout << "Turno de las blancas " << piezaBlanca;
+
+			gotoxy(55, 6);
+			cout << "Sus fichas son: " << tablero.contarPiezas(piezaBlanca);
+
+		}	else {
+
+			cout << "Turno de las negras " << piezaNegra;
+
+			gotoxy(55, 6);
+			cout << "Sus fichas son: " << tablero.contarPiezas(piezaNegra);
+
+		}
 
 		gotoxy(55,7);
 		cout << "Esperando jugada";
 
+		do{
+
 		gotoxy(47,10);
-		cout << "Introduzca primera coordenada (A-H)";
+		cout << "Introduzca primera coordenada (0-7)        "; // Los espacios en blanco son una validacion pirata. (Bien pirata :v)
 
 		gotoxy(65,11);
 		cin >> coordX;
 
 		gotoxy(47,10);
-		cout << "Introduzca segunda coordenada (A-H)";
+		cout << "Introduzca segunda coordenada (A-H)        ";
 
 		gotoxy(65,11);
 		cin >> coordY;
 
 		gotoxy(47,10);
-		cout << "Introduzca primera coordenada a mover (A-H)";
+		cout << "Introduzca primera coordenada a mover (0-7)";
 
 		gotoxy(65,11);
 		cin >> newCoordX;
@@ -203,8 +253,17 @@ void humanoVShumano(){
 		gotoxy(65,11);
 		cin >> newCoordY;
 
+		if (!tablero.moverPieza(coordX,coordY,newCoordX,newCoordY)){
+			gotoxy(50,9);
+			cout << "Error, jugada no permitida";
+			continue; // para el que no se acuerde, continue termina la vuelta del ciclo y comienza otra iteracion.
+		}else
+			break; // El break rompe y se sale completamente.
 
-		tablero.moverPieza(coordX,coordY,newCoordX,newCoordY);
+	}while(true);
+
+
+
 
 	}while(true);
 }
