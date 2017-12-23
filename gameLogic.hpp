@@ -43,17 +43,16 @@ class Tablero{
 		};
 		void imprimirCasillas();
 		void imprimirTablero();
+		void imprimirPiezas();
 
 
 };
 
 void Tablero::imprimirCasillas(){
 	// Esto es infernal de leer, analicen uno y modulenlo, como explique en la funcion "imprimirTablero"
-int flag = 0;
-
 
 	// El siguiente 'superFor' se encarga de dibujar la casillas de el tablero
-
+	int flag = 0;
 	for (int k = 1; k < 25; k+=3) {
 		if (flag++ % 2 == 0)
 		for (int i = 0; i < 41; i+=5) {
@@ -98,10 +97,41 @@ int flag = 0;
 	}
 
 }
+void Tablero::imprimirPiezas(){
+
+	for (int i = 1; i < 25; i+=3) {
+		for (int j = 0; j < 41; j+=5) {
+
+			if (j == 0) j++; // Esto es una validacion magica.
+				// Estos dos primeros if dibujan SOLO las piezas blancas de el primer lado del tablero.
+
+				if (j % 2 != 0 && (i == 1 || i == 7)) {
+					gotoxy(j,i+1);
+					cout << blanco << blanco << piezaBlanca << blanco << blanco;
+				}
+				if (j % 2 == 0 && (i == 4)){
+					gotoxy(j,i+1);
+					cout << blanco << blanco << piezaBlanca << blanco << blanco;
+				}
+
+				// Estos dos bueno... Hacen lo opuesto al primer par de if.
+
+				if (j % 2 != 0 && (i == 19)){
+
+					gotoxy(j,i+1);
+					cout << blanco << blanco << piezaNegra << blanco << blanco;
+				}
+				if ( j % 2 == 0 && (i == 16 || i == 22)){
+
+					gotoxy(j,i+1);
+					cout << blanco << blanco << piezaNegra << blanco << blanco;
+				}
+		}
+	}
+}
 void Tablero::imprimirTablero(){
 	// Angel - 10/12/17 - 6:50pm
-	// Imprimiendo casillas -- Alguien que module esto para que sea mas amigable (con fors. yo lo estaba haciendo pero hay que
-	// sentarse un rato para calcular las coordenadas del gotoxy para que se imprima bien
+
 	// mi idea es tener la funcion "imprimirTablero" que llame a "imprimirCasilla" y luego "imprimirPieza"
 	// quedando algo bastante agradable tipo:
 	//
@@ -111,8 +141,12 @@ void Tablero::imprimirTablero(){
 	//	Y quedaría una abstracción bastante chevere de lo que es la matriz que se muestra con respecto al tablero real donde estarán las piezas
 	//
 
+	// Fernando 23/12/17
+	// Cito: imprimirPiezas(tablero); Pasarle tablero a un metodo de la clase tablero no tiene mucho sentido
+	// debido a que tablero ya es parte del objeto :v, Borra todo estos comentarios innecesario de este metodo despues de leer esto.
+
 	imprimirCasillas();
-	//imprimirPiezas(tablero);
+	imprimirPiezas();
 };
 
 void humanoVShumano(){
