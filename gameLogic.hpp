@@ -43,12 +43,19 @@ class Tablero{
 			}
 			turno = 0;
 		};
+		//Methods
 		void imprimirCasillas();
 		void imprimirTablero();
 		void imprimirPiezas();
 		bool moverPieza(int,int,int,int);
-
+		//Getters
+		int getTurno();
+		//Setters
 };
+
+int Tablero::getTurno(){
+	return turno;
+}
 
 void Tablero::imprimirCasillas(){
 	// Esto es infernal de leer, analicen uno y modulenlo, como explique en la funcion "imprimirTablero"
@@ -101,7 +108,7 @@ void Tablero::imprimirCasillas(){
 }
 void Tablero::imprimirPiezas(){
 
-	// Esta funcion no valida, Solo imprime las piezas
+	// Esta funcion no valida (le falta un acento en valida), Solo imprime las piezas
 
 
 			for (int k = 0; k < 8; k++) {
@@ -138,6 +145,11 @@ void Tablero::imprimirTablero(){
 
 bool Tablero::moverPieza(int x, int y, int newX, int newY){
 
+	tablero[newX][newY] = tablero[x][y];
+	tablero[x][y] = " ";
+
+	turno++;
+
 
 
 }
@@ -145,26 +157,56 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY){
 
 void humanoVShumano(){
 
-	char coordH;
-	int turno = 1;
+	int coordX;
+	int coordY;
+	int newCoordX;
+	int newCoordY;
+
 	Tablero tablero;
-	clearScreen();
-	tablero.imprimirTablero();
+	do {
+		clearScreen();
+		tablero.imprimirTablero();
 
-	gotoxy(55, 5);
-	cout << "Turno del jugador " << turno;
+		gotoxy(55, 5);
+		if (tablero.getTurno() % 2 == 0)
+			cout << "Turno de las blancas";
+		else
+			cout << "Turno de las negras";
 
-	gotoxy(55, 6);
-	cout << "Sus fichas son: O";
+		gotoxy(55, 6);
+		cout << "Sus fichas son: O";
 
-	gotoxy(55,7);
-	cout << "Esperando jugada";
+		gotoxy(55,7);
+		cout << "Esperando jugada";
 
-	gotoxy(47,10);
-	cout << "Introduzca primera coordenada (A-H)";
+		gotoxy(47,10);
+		cout << "Introduzca primera coordenada (A-H)";
 
-	gotoxy(65,11);
-	cin >> coordH;
+		gotoxy(65,11);
+		cin >> coordX;
+
+		gotoxy(47,10);
+		cout << "Introduzca segunda coordenada (A-H)";
+
+		gotoxy(65,11);
+		cin >> coordY;
+
+		gotoxy(47,10);
+		cout << "Introduzca primera coordenada a mover (A-H)";
+
+		gotoxy(65,11);
+		cin >> newCoordX;
+
+		gotoxy(47,10);
+		cout << "Introduzca segunda coordenada a mover (A-H)";
+
+		gotoxy(65,11);
+		cin >> newCoordY;
+
+
+		tablero.moverPieza(coordX,coordY,newCoordX,newCoordY);
+
+	}while(true);
 }
 
 void instrucciones(){
