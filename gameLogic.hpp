@@ -4,12 +4,15 @@
 #include <wchar.h>
 #include <unistd.h>
 #include <termios.h>
+#include <string>
+#include <list>
+#include <string>
 #include <math.h>
+#include <cassert>
 
 using namespace std;
 static struct termios old, new_;
 
-//"Aqui llego HendryXXXXXXXXX1 a tirar mierda en el codigo": // fer: Maldita sea.
 #define KEY_UP 65
 #define KEY_DO 66
 #define KEY_DE 67
@@ -18,23 +21,32 @@ static struct termios old, new_;
 #define ESC 27
 #define CTAB 25//Posicion en el eje X del cursor
 #define OTAB 29//Posicion en el eje X de las opciones del menu
-#define cursor "\033[1;38m</>"
+#define cursor "\033[1;38m</>\033[0m"
 
-string piezaBlanca="\E[41m░";
-string piezaNegra="\E[42m░";
-string blanco="\E[47m░";
+string piezaBlanca="\E[41m░\033[0m";
+string piezaNegra="\E[42m░\033[0m";
+string blanco="\E[47m░\033[0m";
 string negro="█";//
 string vacio=" ";
-string selector="\E[40m░";
+string selector="\E[40m░\033[0m";
 
 void resizeTerminal(){
-	cout << "\e[8;27;85t";
+	cout << "\e[8;35;120t";
 }
 void gotoxy(int x,int y){
 	printf("%c[%d;%df",0x1B,y,x);
 }
 void clearScreen(){
 	cout << "\033[2J";
+}
+string to_string( int x ) {	// convierte int a string para trabajar de forma sencilla la forma en que se guardará el historial de jugadas
+  int length = snprintf( NULL, 0, "%d", x );
+  assert( length >= 0 );
+  char* buf = new char[length + 1];
+  snprintf( buf, length + 1, "%d", x );
+  string str( buf );
+  delete[] buf;
+  return str;
 }
 
 // Ese codigo de abajo no puede ser mas copy paste... :|
@@ -114,6 +126,7 @@ class Tablero{
 
 	private:
 		string tablero[8][8];
+		list<string> historialDeJugadas; // lista donde se guardará el log de jugadas
 		int turno;
 	public:
 		//Constructor
@@ -129,6 +142,7 @@ class Tablero{
 				}
 			}
 			turno = 0;
+			historialDeJugadas.push_back("Partida iniciada " + fecha() + " a las: " + momentoActual());
 		};
 
 		//Metodos
@@ -139,19 +153,27 @@ class Tablero{
 		void imprimirOtrosDatos();
 		void seleccionarPieza(string);
 		void imprimirLinea(string);
+		void imprimirHistorialJugadas();
+		void agregarAlHistorialDeJugadas(string, int, int, int, int);
 		void moverPieza();
 		bool moverPieza(int,int,int,int);
 		int contarPiezas(string);
-
+		string momentoActual();
+		string fecha();
+		bool botEstaAmenazado(int, int, string);
+		bool botIntentaComer(string);
+		bool botIntentaEscapar(int, int, string, string);
+		void botJugadaAleatoria(string);
+		bool botOtraPiezaDefiende(int, int);
+		bool botMovimientoEducadoAleatorio();
+		void turnoBot1();
 		//getters
 		// int getTurno(){ return turno;};
 };
-
 void Tablero::imprimirTablero(){
 	clearScreen();
 
 	// El siguiente 'superFor' se encarga de dibujar la casillas de el tablero
-
 	// Esos valores locos son solo calculos de coordenadas en el terminal.
 
 	int flag = 0;
@@ -189,17 +211,17 @@ void Tablero::imprimirTablero(){
 
 	short i = 4;
 	// Imprimiendo coordenadas horizontales
-	for(int a = 65; a<73; a++){ // A == 65 - ASCII code
+	for(int j = 0; j<8; j++){
 		gotoxy(i,34);
-		cout << (char)a;
+		cout << j;
 		i = i+7;
 	}
 	short aux = 2;
 	// Imprimiendo coordenadas verticales
-	for(int i=8;i>=1;i--){
+	for(int i=0; i<8; i++){
 		gotoxy(58,aux);
 		cout << i;
-		aux = aux +4;
+		aux = aux + 4;
 	}
 }
 void Tablero::imprimirPieza(string pieza, int x, int y) { // Si se preguntan porque primero esta Y y despues X no lo hagan
@@ -232,17 +254,17 @@ void Tablero::imprimirOtrosDatos() {
 		gotoxy(80, 5);
 		if (turno % 2 == 0){
 
-			cout << "Turno de las blancas " << piezaBlanca << " Rojas ";
+			cout << "Turno de las " << piezaBlanca << " Rojas ";
 
 			gotoxy(80, 6);
-			cout << "Sus fichas son: " << contarPiezas(piezaBlanca);
+			cout << "Le quedan " << contarPiezas(piezaBlanca) << " piezas";
 
 		}	else {
 
-			cout << "Turno de las negras " << piezaNegra << " Mostaza ";
+			cout << "Turno de las " << piezaNegra << " Verdes ";
 
 			gotoxy(80, 6);
-			cout << "Sus fichas son: " << contarPiezas(piezaNegra);
+			cout << "Le quedan: " << contarPiezas(piezaNegra) << " piezas";
 
 		}
 
@@ -250,19 +272,94 @@ void Tablero::imprimirOtrosDatos() {
 		cout << "Esperando jugada";
 
 }
-
 void Tablero::imprimirLinea(string color) {
 
 			cout <<color<<color<<color<<color<<color<<color<<color;
 }
-bool Tablero::moverPieza(int x,int y,int newX, int newY) {
+void Tablero::imprimirHistorialJugadas(){
+	// imprime en el mismo espacio las ultimas 5 jugadas
+	int i = 0;
+	list<string>::reverse_iterator iterador = historialDeJugadas.rbegin(); // para poder imprimir el log en pantalla (del final para el inicio)
+
+	gotoxy(80,20);
+	cout << "HISTORIAL  DE  JUGADAS";
+
+	if(historialDeJugadas.size() == 1){
+		gotoxy(70,23);
+		cout << (*iterador) << "   ";
+	}
+
+	if(historialDeJugadas.size() == 2){
+		gotoxy(70,23);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,24);
+		cout << (*iterador) << "   ";
+	}
+
+	if(historialDeJugadas.size() == 3){
+		gotoxy(70,23);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,24);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,25);
+		cout << (*iterador) << "   ";
+	}
+
+	if(historialDeJugadas.size() == 4){
+		gotoxy(70,23);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,24);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,25);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,26);
+		cout << (*iterador) << "   ";
+	}
+
+	if(historialDeJugadas.size() >= 5){
+		gotoxy(70,23);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,24);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,25);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,26);
+		cout << (*iterador) << "   ";
+		iterador++;
+		gotoxy(70,27);
+		cout << (*iterador) << "   ";
+	}
+
+}
+void Tablero::agregarAlHistorialDeJugadas(string jugador, int x, int y, int newX, int newY){
+
+	string momento = momentoActual();
+	string jugada;
+	if(jugador == piezaBlanca){
+		jugada = "Rojas - " + momento + ": (" + to_string(x) + "," + to_string(y) + ") -> (" + to_string(newX) + "," + to_string(newY) + ")";
+	}else{
+		jugada = "Verdes - " + momento + ": (" + to_string(x) + "," + to_string(y) + ") -> (" + to_string(newX) + "," + to_string(newY) + ")";
+	}
+
+	historialDeJugadas.push_back(jugada); // agrega de ultimo la ultima jugada dentro de la lista
+}
+bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 
 	if (turno % 2 == 0 && tablero[x][y] != piezaBlanca)
 		return false;
 
 	if (turno % 2 != 0 && tablero[x][y] != piezaNegra)
 		return false;
-		
+
 	if( newX % 2 == 0 && newY % 2 == 0 )
 		return false;
 
@@ -278,11 +375,9 @@ bool Tablero::moverPieza(int x,int y,int newX, int newY) {
 	if ( (abs(y - newY)) != 1 )
 		return false;
 
-
-
+	agregarAlHistorialDeJugadas(piezaNegra, x, y, newX, newY);
 	tablero[newX][newY] = tablero[x][y];
 	tablero[x][y] = vacio;
-
 	turno++;
 
 	return true;
@@ -298,8 +393,6 @@ int Tablero::contarPiezas(string pieza) {
 	}
 	return count;
 }
-
-
 void Tablero::seleccionarPieza(string pieza){
 	int KEY,i=0, j=0;
 	bool cent;
@@ -322,76 +415,250 @@ void Tablero::seleccionarPieza(string pieza){
 			case KEY_DO:
 				j++;
 				if (j>7) j=0;
-			break;
+				break;
 			case KEY_UP:
 				j--;
 				if (j<0) j=7;
-			break;
+				break;
 			case KEY_IZ:
 				i--;
 				if(i<0) i=7;
-			break;
+				break;
 			case KEY_DE:
 				i++;
 				if(i>7) i=0;
-			break;
+				break;
 			case ENTER:
+				int auxI= i, auxJ = j;
+				bool flag;
 
-			int auxI= i, auxJ = j;
-			bool flag;
+				do{
+					imprimirCursor((i*7) + 1 , (j*4) +1 ,selector);
+					fflush(stdin);
+					KEY=getch();
+					fflush(stdin);
+					if ((i+j)%2!=0)
+						imprimirCursor((i*7) + 1,(j*4) +1,negro);
+					if((i+j)%2==0)
+						imprimirCursor((i*7) + 1,(j*4) +1,blanco);
 
-			do{
-				imprimirCursor((i*7) + 1 , (j*4) +1 ,selector);
-				fflush(stdin);
-				KEY=getch();
-				fflush(stdin);
-				if ((i+j)%2!=0)
-					imprimirCursor((i*7) + 1,(j*4) +1,negro);
-				if((i+j)%2==0)
-					imprimirCursor((i*7) + 1,(j*4) +1,blanco);
+					flag = true;
+					fflush(stdin);
 
-				flag = true;
-				fflush(stdin);
-
-				switch (KEY){
-					case KEY_DO:
-						j++;
-						if (j>7) j=0;
-					break;
-					case KEY_UP:
-						j--;
-						if (j<0) j=7;
-					break;
-					case KEY_IZ:
-						i--;
-						if(i<0) i=7;
-					break;
-					case KEY_DE:
-						i++;
-						if(i>7) i=0;
-					break;
-					case ENTER:
-						flag = false;
-					break;
-				}
-			}while(flag);
+					switch (KEY){
+						case KEY_DO:
+							j++;
+							if (j>7) j=0;
+							break;
+						case KEY_UP:
+							j--;
+							if (j<0) j=7;
+							break;
+						case KEY_IZ:
+							i--;
+							if(i<0) i=7;
+							break;
+						case KEY_DE:
+							i++;
+							if(i>7) i=0;
+							break;
+						case ENTER:
+							flag = false;
+							break;
+					}
+				}while(flag);
 
 			if(!moverPieza(auxJ, auxI, j , i)){
 				gotoxy(80,3);
 				cout << "Error, jugada invalida";
 			}else
 					cent = false;
-			break;
+					break;
 		}
 	}while(cent);
 }
-
-
+string Tablero::momentoActual() {
+  time_t now = time(0);
+  struct tm  tstruct;
+  char buf[80];
+  tstruct = *localtime(&now);
+  strftime(buf, sizeof(buf), "[%X]", &tstruct);
+  return buf;
+}
+string Tablero::fecha(){
+  time_t now = time(0);
+  struct tm  tstruct;
+  char buf[80];
+  tstruct = *localtime(&now);
+  strftime(buf, sizeof(buf), "%d-%m-%Y", &tstruct);
+  return buf;
+}
 
 //###############################################################
-//###################     Otras Funciones     ###################
+//###################    Funciones del bot    ###################
 //###############################################################
 
+// Funciones del bot1
+bool Tablero::botEstaAmenazado(int x, int y, string enemigo){
+
+	if(tablero[x-1][y-1] == enemigo){
+		return true;
+	}
+	if(tablero[x+1][y-1] == enemigo){
+		return true;
+	}
+	if(tablero[x-1][y+1] == enemigo){
+		return true;
+	}
+	if(tablero[x+1][y+1] == enemigo){
+		return true;
+	}
+
+	return false;
+}
+bool Tablero::botIntentaEscapar(int x, int y, string enemigo, string companero){ // solo funciona para el bot1 (piezas verdes)
+
+	int coordXEnemigo, coordYEnemigo;
+	// obteniendo coordenadas del enemigo que amenaza
+	if(tablero[x-1][y-1] == enemigo){
+		coordXEnemigo = x-1;
+		coordYEnemigo = y-1;
+	}
+	if(tablero[x+1][y-1] == enemigo){
+		coordXEnemigo = x+1;
+		coordYEnemigo = y-1;
+	}
+	if(tablero[x-1][y+1] == enemigo){
+		coordXEnemigo = x-1;
+		coordYEnemigo = y+1;
+	}
+	if(tablero[x+1][y+1] == enemigo){
+		coordXEnemigo = x+1;
+		coordYEnemigo = y+1;
+	}
+
+	//si coordXEnemigo == x-1, está siendo atacado por la izquierda, caso contrario, es derecha (x+1)
+	if(coordXEnemigo == x-1){
+		//'verifica que casilla opuesta (x+1) es segura y se mueve hacia ella, si no es segura, retorna falso (no puede escapar)
+		if(tablero[x+2][y+2] == enemigo){
+			return false; // no puede escapar de forma segura
+		}
+
+		if(tablero[x][y+2] == enemigo){
+			//si hay una pieza compañera que defiende la casilla igualmente se mueve a ella
+			if(tablero[x+2][y] == companero){
+				tablero[x][y] == vacio;
+				tablero[x+1][y+1] == companero;
+				return true;
+			}else{
+				return false; //no puede escapar
+			}
+		}else{
+			// la casilla es segura
+			// verificando que está vacia, si no está vacia, un beta ps, que otra pieza intente bloquear.
+			if(tablero[x+1][y+1] == vacio){
+				// convierte a vacio en donde está parada la pieza
+				// y la mueve
+				tablero[x][y] == vacio;
+				tablero[x+1][y+1] == companero;
+				return true;
+			}else{
+				return false;
+			}
+		}
+	}
+
+	// si esta siendo atacado por la derecha
+	if(coordXEnemigo == x+1){
+		//'verifica que casilla opuesta (x-1) es segura y se mueve hacia ella, si no es segura, retorna falso (no puede escapar)
+		if(tablero[x-2][y-2] == enemigo){
+			return false; // no puede escapar de forma segura
+		}
+
+		if(tablero[x][y+2] == enemigo){
+			//si hay una pieza compañera que defiende la casilla igualmente se mueve a ella
+			if(tablero[x-2][y] == companero){
+				tablero[x][y] == vacio;
+				tablero[x-1][y-1] == companero;
+				return true;
+			}else{
+				return false; //no puede escapar
+			}
+		}else{
+			// la casilla es segura
+			// verificando que está vacia, si no está vacia, un beta ps, que otra pieza intente bloquear.
+			if(tablero[x-1][y-1] == vacio){
+				// convierte a vacio en donde está parada la pieza
+				// y la mueve
+				tablero[x][y] == vacio;
+				tablero[x-1][y-1] == companero;
+				return true;
+			}else{
+				return false;
+			}
+		}
+	}
+
+}
+void Tablero::turnoBot1(){ // bot1 es el de las piezas verdes.
+	short bandera = 0; // 0 = no ha jugado
+	for(short i = 0; i<8; i++){
+		for(short j = 0; j<8; j++){
+			if(bandera == 1){
+				// turno contricante
+			}
+			if(tablero[i][j] == piezaBlanca){	// piezaBlanca == piezaVerde en el juego (las de arriba, que pertenecen al bot1)
+				// se analiza el entorno de la pieza en la que se esta parado
+				if(botEstaAmenazado(i,j,piezaNegra)){ // true == está amenazado; false lo contrario
+					if(botIntentaEscapar(i,j,piezaNegra, piezaBlanca)){ // true si escapó, false si no puede esacapar
+						bandera = 1;
+					}else if (botOtraPiezaDefiende(i, j)){ // true si otra pieza puede defender; false lo contrario
+						bandera = 1;
+					}
+				}
+			}
+		}
+	}
+
+	if(bandera == 1){
+		// turno contricante
+	}
+
+	// Si recorrió todo, y no hay piezas amenazadas, intenta ubicarse en los laterales (si está cerca, entiendase, columna 1 o 6)
+	// si no puede:
+	// hace un "movimiento educado aleatorio"
+	// basicamente una jugada aleatoria pero que no pone piezas en peligro
+	// si no puede hacer mas movimientos educados, come a una pieza enemiga
+	// si no puede comer a una pieza enemiga, hace una jugada aleatoria.
+
+	if(botMovimientoEducadoAleatorio()){
+		bandera = 1;
+	}
+	else if(botIntentaComer(piezaNegra)){
+		bandera = 1;
+	}else{
+		botJugadaAleatoria(piezaNegra);
+		bandera = 1;
+	}
+
+}
+void Tablero::botJugadaAleatoria(string enemigo){
+
+}
+bool Tablero::botIntentaComer(string enemigo){
+
+}
+bool Tablero::botOtraPiezaDefiende(int x, int y){
+
+}
+bool Tablero::botMovimientoEducadoAleatorio(){
+
+}
+// Funciones del bot2 (solo se usan en el modo BotVsBot)
+
+//###############################################################
+//###################    Opciones del menu    ###################
+//###############################################################
 
 void humanoVShumano(){
 
@@ -399,14 +666,14 @@ void humanoVShumano(){
 	//int turno = 1;
 	Tablero tablero=Tablero();
 	do{
-	clearScreen();
-	tablero.imprimirTablero();
-	tablero.imprimirPiezas();
-	tablero.imprimirOtrosDatos();
-	tablero.seleccionarPieza(piezaBlanca);
+		clearScreen();
+		tablero.imprimirTablero();
+		tablero.imprimirPiezas();
+		tablero.imprimirOtrosDatos();
+		tablero.imprimirHistorialJugadas();
+		tablero.seleccionarPieza(piezaBlanca);
 	}while(true);
 }
-
 void instrucciones(){
 	short aux = 0;
 
@@ -434,11 +701,8 @@ void instrucciones(){
 	}while(aux != 10);
 	clearScreen();
 }
-
 void humanoVSbot(){}
-
 void botVSbot(){}
-
 void info(){
 	short aux = 0;
 	do{
@@ -465,9 +729,7 @@ void info(){
 	}while(aux != 10);
 	clearScreen();
 }
-
 void salir(){
-
 	cout << "\nSaliendo del juego" << endl;
 	usleep(1000000);
 	gotoxy(20,19);
