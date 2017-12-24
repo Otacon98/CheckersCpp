@@ -3,14 +3,29 @@
 #include <time.h>
 #include <wchar.h>
 #include <unistd.h>
+#include <termios.h>
 #include <math.h>
-using namespace std;
 
-string blanco="░";
-string negro="█";
-string piezaBlanca = "O";
-string piezaNegra = "X";
-string vacio = " ";
+using namespace std;
+static struct termios old, new_;
+
+//"Aqui llego HendryXXXXXXXXX1 a tirar mierda en el codigo": // fer: Maldita sea.
+#define KEY_UP 65
+#define KEY_DO 66
+#define KEY_DE 67
+#define KEY_IZ 68
+#define ENTER 10
+#define ESC 27
+#define CTAB 25//Posicion en el eje X del cursor
+#define OTAB 29//Posicion en el eje X de las opciones del menu
+#define cursor "\033[1;38m</>"
+
+string piezaBlanca="\E[41m░";
+string piezaNegra="\E[42m░";
+string blanco="\E[47m░";
+string negro="█";//
+string vacio=" ";
+string selector="\E[40m░";
 
 void resizeTerminal(){
 	cout << "\e[8;27;85t";
@@ -22,148 +37,229 @@ void clearScreen(){
 	cout << "\033[2J";
 }
 
-// Clase tablero
+// Ese codigo de abajo no puede ser mas copy paste... :|
+// Que el autor acomode esa verga al castellano.
+
+//getch(); y getche();//Necesario para usar el "dpad"
+void initTermios(int echo) {
+  tcgetattr(0, &old); /* grab old terminal i/o settings */
+  new_ = old; /* make new settings same as old settings */
+  new_.c_lflag &= ~ICANON; /* disable buffered i/o */
+  new_.c_lflag &= echo ? ECHO : ~ECHO; /* set echo mode */
+  tcsetattr(0, TCSANOW, &new_); /* use these new terminal i/o settings now */
+}
+
+/* Restore old terminal i/o settings */
+void resetTermios(void) {
+  tcsetattr(0, TCSANOW, &old);
+}
+
+/* Read 1 character - echo defines echo mode */
+char getch_(int echo) {
+  char ch;
+  initTermios(echo);
+  ch = getchar();
+  resetTermios();
+  return ch;
+}
+
+/* Read 1 character without echo */
+char getch(void) {
+  return getch_(0);
+}
+
+
+//###############################################################
+//########################     MENU     #########################
+//###############################################################
+
+
+int menuXY(int a, int A){
+	int KEY;
+	int y=a;
+	A=A+a;
+	do{
+		gotoxy(CTAB,y);
+		cout<<cursor;
+		KEY=getch();
+		switch (KEY)
+		{
+			case KEY_UP:
+				gotoxy(CTAB,y);cout<<"   ";
+				y--;
+				if (y==(a-1))
+					y=(A-1);
+			break;
+			case KEY_DO:
+				gotoxy(CTAB,y);cout<<"   ";
+				y++;
+				if (y==A)
+					y=a;
+			break;
+			case ENTER:
+				return (y-a+1);
+			break;
+		}
+	}while (KEY!=ENTER);
+	return (y-a+1);
+}
+
+
+//###############################################################
+//####################     Clase tablero     ####################
+//###############################################################
+
+
 class Tablero{
 
 	private:
-		string tablero[8][8]; // aloja a las piezas.
-		int turno; // Define el turno y de quien es el turno.
-
+		string tablero[8][8];
+		int turno;
 	public:
 		//Constructor
 		Tablero(){
 			for(short i=0;i<8;i++){
 				for(short j=0;j<8;j++){
 					if( i<= 2 && ((i+j)%2 !=0) )
-						tablero[i][j] = piezaBlanca;
-					else if (i>=5&&((i+j)%2!=0))
 						tablero[i][j] = piezaNegra;
+					else if (i>=5&&((i+j)%2!=0))
+						tablero[i][j] = piezaBlanca;
 					else
 						tablero[i][j] = vacio;
 				}
 			}
 			turno = 0;
 		};
-		//Methods
-		void imprimirCasillas();
+
+		//Metodos
 		void imprimirTablero();
+		void imprimirPieza(string, int,int);
 		void imprimirPiezas();
-		int contarPiezas(string);
+		void imprimirCursor(int, int, string);
+		void imprimirOtrosDatos();
+		void seleccionarPieza(string);
+		void imprimirLinea(string);
+		void moverPieza();
 		bool moverPieza(int,int,int,int);
-		//Getters
-		int getTurno();
-		//Setters
+		int contarPiezas(string);
+
+		//getters
+		// int getTurno(){ return turno;};
 };
 
-int Tablero::getTurno(){
-	return turno;
-}
-
-void Tablero::imprimirCasillas(){
-	// Esto es infernal de leer, analicen uno y modulenlo, como explique en la funcion "imprimirTablero"
+void Tablero::imprimirTablero(){
+	clearScreen();
 
 	// El siguiente 'superFor' se encarga de dibujar la casillas de el tablero
+
+	// Esos valores locos son solo calculos de coordenadas en el terminal.
+
 	int flag = 0;
-	for (int k = 1; k < 25; k+=3) {
+	for (int k = 1; k < 33; k+=4) {
 		if (flag++ % 2 == 0)
-		for (int i = 0; i < 41; i+=5) {
-			for (int j = 0; j < 3; j++) {
+		for (int i = 0; i < 57; i+=7) {
+			for (int j = 0; j < 4; j++) {
+
 				gotoxy(i,j+k);
-				if (i == 0 ) i++;
+
+				if (i == 0 ) i++; // Esto es una validacion magica, NO tocar.
+
 				if (i % 2 != 0)
-				cout << blanco << blanco << blanco << blanco << blanco;
+					imprimirLinea(blanco);
 				else
-				cout << negro << negro << negro << negro << negro;
+					imprimirLinea(negro);
+
 			}
 		} // Hendry mamalo, borra este beta cuando lo leas, mmlo otra vez.
 		else
-		for (int i = 0; i < 41; i+=5) {
-			for (int j = 0; j < 3; j++) {
-				gotoxy(i,j+k);
-				if (i == 0 ) i++;
-				if (i % 2 == 0)
-				cout << blanco << blanco << blanco << blanco << blanco;
-				else
-				cout << negro << negro << negro << negro << negro;
+		for (int i = 0; i < 57; i+=7) {
+			for (int j = 0; j < 4; j++) {
 
+				gotoxy(i,j+k);
+
+				if (i == 0 ) i++; // Esto es una validacion magica, NO tocar.
+
+				if (i % 2 == 0)
+					imprimirLinea(blanco);
+				else
+					imprimirLinea(negro);
 			}
 		}
-
 	}
 
-	short i = 3;
+	short i = 4;
 	// Imprimiendo coordenadas horizontales
 	for(int a = 65; a<73; a++){ // A == 65 - ASCII code
-		gotoxy(i,26);
+		gotoxy(i,34);
 		cout << (char)a;
-		i = i+5;
+		i = i+7;
 	}
-
 	short aux = 2;
 	// Imprimiendo coordenadas verticales
-	for(int i = 0;i<8;i++){
-		gotoxy(43,aux);
+	for(int i=8;i>=1;i--){
+		gotoxy(58,aux);
 		cout << i;
-		aux = aux +3;
+		aux = aux +4;
 	}
-
+}
+void Tablero::imprimirPieza(string pieza, int x, int y) { // Si se preguntan porque primero esta Y y despues X no lo hagan
+																													// Tengan Fe de que eso funciona y ya. <3
+	gotoxy((y*7) + 2, (x*4) + 2);
+	cout << pieza << pieza << pieza << pieza << pieza ;
+	gotoxy((y*7) + 2, (x*4) + 3);
+	cout << pieza << pieza << pieza << pieza << pieza ;
 
 }
 void Tablero::imprimirPiezas(){
 
-	// Esta funcion no valida (le falta un acento en valida), Solo imprime las piezas
-
-
-			for (int k = 0; k < 8; k++) {
-				for (int l = 0; l < 8; l++) {
-
-					if (tablero[k][l] != vacio) {
-
-							gotoxy((l*5) + 3, (k*3) + 2);
-							cout << tablero[k][l];
-					}
-				}
-			}
-
-}
-void Tablero::imprimirTablero(){
-	// Angel - 10/12/17 - 6:50pm
-
-	// mi idea es tener la funcion "imprimirTablero" que llame a "imprimirCasilla" y luego "imprimirPieza"
-	// quedando algo bastante agradable tipo:
-	//
-	//		imprimirCasillas();
-	//		imprimirPiezas(tablero);
-	//
-	//	Y quedaría una abstracción bastante chevere de lo que es la matriz que se muestra con respecto al tablero real donde estarán las piezas
-	//
-
-	// Fernando 23/12/17
-	// Cito: imprimirPiezas(tablero); Pasarle tablero a un metodo de la clase tablero no tiene mucho sentido
-	// debido a que tablero ya es parte del objeto :v, Borra todo estos comentarios innecesario de este metodo despues de leer esto.
-
-	imprimirCasillas();
-	imprimirPiezas();
-};
-int Tablero::contarPiezas(string pieza) {
-	int count = 0;
-	for (int i = 0; i < 8; i++) {
-		for (int k = 0; k < 8; k++) {
-			if (tablero[i][k] == pieza) {
-				count++;
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 8; j++) {
+				if (tablero[i][j] != vacio)
+					imprimirPieza(tablero[i][j], i,j);
 			}
 		}
-	}
-	return count;
+}
+void Tablero::imprimirCursor(int X, int Y,string casilla){
+	gotoxy(X,Y);
+	imprimirLinea(casilla);
+	gotoxy(X,Y+1);cout<<casilla;gotoxy(X+6,Y+1);cout<<casilla;
+	gotoxy(X,Y+2);cout<<casilla;gotoxy(X+6,Y+2);cout<<casilla;
+	gotoxy(X,Y+3);
+	imprimirLinea(casilla);
+}
+void Tablero::imprimirOtrosDatos() {
+
+		gotoxy(80, 5);
+		if (turno % 2 == 0){
+
+			cout << "Turno de las blancas " << piezaBlanca << " Rojas ";
+
+			gotoxy(80, 6);
+			cout << "Sus fichas son: " << contarPiezas(piezaBlanca);
+
+		}	else {
+
+			cout << "Turno de las negras " << piezaNegra << " Mostaza ";
+
+			gotoxy(80, 6);
+			cout << "Sus fichas son: " << contarPiezas(piezaNegra);
+
+		}
+
+		gotoxy(80,7);
+		cout << "Esperando jugada";
+
 }
 
-bool Tablero::moverPieza(int x, int y, int newX, int newY){
+void Tablero::imprimirLinea(string color) {
 
-	// Validaciones locas.
+			cout <<color<<color<<color<<color<<color<<color<<color;
+}
+bool Tablero::moverPieza(int x,int y,int newX, int newY) {
 
 	if (turno % 2 == 0 && tablero[x][y] != piezaBlanca)
 		return false;
-	
+
 	if (turno % 2 != 0 && tablero[x][y] != piezaNegra)
 		return false;
 
@@ -183,88 +279,125 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY){
 		return false;
 
 
+
 	tablero[newX][newY] = tablero[x][y];
-	tablero[x][y] = " ";
+	tablero[x][y] = vacio;
 
 	turno++;
 
 	return true;
-
-
-
 }
+int Tablero::contarPiezas(string pieza) {
+	int count = 0;
+	for (int i = 0; i < 8; i++) {
+		for (int k = 0; k < 8; k++) {
+			if (tablero[i][k] == pieza) {
+				count++;
+			}
+		}
+	}
+	return count;
+}
+
+
+void Tablero::seleccionarPieza(string pieza){
+	int KEY,i=0, j=0;
+	bool cent;
+	do{
+
+		gotoxy(80,3);
+		cout << "                 ";
+		imprimirCursor( (i*7) + 1 , (j*4) +1 ,selector);
+		KEY = getch();
+
+		if((i+j)%2==0)
+			imprimirCursor((i*7) + 1, (j*4) +1,blanco);
+		if ((i+j)%2!=0)
+			imprimirCursor((i*7) + 1, (j*4) +1,negro);
+
+		cent = true;
+		fflush(stdin);
+
+		switch (KEY){
+			case KEY_DO:
+				j++;
+				if (j>7) j=0;
+			break;
+			case KEY_UP:
+				j--;
+				if (j<0) j=7;
+			break;
+			case KEY_IZ:
+				i--;
+				if(i<0) i=7;
+			break;
+			case KEY_DE:
+				i++;
+				if(i>7) i=0;
+			break;
+			case ENTER:
+
+			int auxI= i, auxJ = j;
+
+			do{
+				imprimirCursor((i*7) + 1 , (j*4) +1 ,selector);
+				KEY=getch();
+				fflush(stdin);
+				if ((i+j)%2!=0)
+					imprimirCursor((i*7) + 1,(j*4) +1,negro);
+				if((i+j)%2==0)
+					imprimirCursor((i*7) + 1,(j*4) +1,blanco);
+				fflush(stdin);
+
+				switch (KEY){
+					case KEY_DO:
+						j++;
+						if (j>7) j=0;
+					break;
+					case KEY_UP:
+						j--;
+						if (j<0) j=7;
+					break;
+					case KEY_IZ:
+						i--;
+						if(i<0) i=7;
+					break;
+					case KEY_DE:
+						i++;
+						if(i>7) i=0;
+					break;
+					case ENTER:
+							if(!moverPieza(auxJ, auxI, j , i)){
+								gotoxy(80,3);
+								cout << "Error, jugada invalida";
+							}else
+								cent = false;
+					break;
+				}
+			}while(cent);
+			break;
+		}
+	}while(cent);
+}
+
+
+
+//###############################################################
+//###################     Otras Funciones     ###################
+//###############################################################
 
 
 void humanoVShumano(){
 
-	int coordX;
-	int coordY;
-	int newCoordX;
-	int newCoordY;
-
-	Tablero tablero;
-	do {
-		clearScreen();
-		tablero.imprimirTablero();
-
-		gotoxy(55, 5);
-		if (tablero.getTurno() % 2 == 0){
-
-			cout << "Turno de las blancas " << piezaBlanca;
-
-			gotoxy(55, 6);
-			cout << "Sus fichas son: " << tablero.contarPiezas(piezaBlanca);
-
-		}	else {
-
-			cout << "Turno de las negras " << piezaNegra;
-
-			gotoxy(55, 6);
-			cout << "Sus fichas son: " << tablero.contarPiezas(piezaNegra);
-
-		}
-
-		gotoxy(55,7);
-		cout << "Esperando jugada";
-
-		do{
-
-		gotoxy(47,10);
-		cout << "Introduzca primera coordenada (0-7)        "; // Los espacios en blanco son una validacion pirata. (Bien pirata :v)
-
-		gotoxy(65,11);
-		cin >> coordX;
-
-		gotoxy(47,10);
-		cout << "Introduzca segunda coordenada (A-H)        ";
-
-		gotoxy(65,11);
-		cin >> coordY;
-
-		gotoxy(47,10);
-		cout << "Introduzca primera coordenada a mover (0-7)";
-
-		gotoxy(65,11);
-		cin >> newCoordX;
-
-		gotoxy(47,10);
-		cout << "Introduzca segunda coordenada a mover (A-H)";
-
-		gotoxy(65,11);
-		cin >> newCoordY;
-
-		if (!tablero.moverPieza(coordX,coordY,newCoordX,newCoordY)){
-			gotoxy(50,9);
-			cout << "Error, jugada no permitida";
-			continue; // para el que no se acuerde, continue termina la vuelta del ciclo y comienza otra iteracion.
-		}else
-			break; // El break rompe y se sale completamente.
-
-	}while(true);
-
-
-
-
+	//char coordH;
+	//int turno = 1;
+	Tablero tablero=Tablero();
+	do{
+	clearScreen();
+	tablero.imprimirTablero();
+	tablero.imprimirPiezas();
+	tablero.imprimirOtrosDatos();
+	tablero.seleccionarPieza(piezaBlanca);
 	}while(true);
 }
 
