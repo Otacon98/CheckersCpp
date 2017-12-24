@@ -256,16 +256,13 @@ void Tablero::imprimirLinea(string color) {
 			cout <<color<<color<<color<<color<<color<<color<<color;
 }
 bool Tablero::moverPieza(int x,int y,int newX, int newY) {
-	static int i= 1;
-	gotoxy(80,1);
-	cout << i++;
 
 	if (turno % 2 == 0 && tablero[x][y] != piezaBlanca)
 		return false;
 
 	if (turno % 2 != 0 && tablero[x][y] != piezaNegra)
 		return false;
-
+		
 	if( newX % 2 == 0 && newY % 2 == 0 )
 		return false;
 
