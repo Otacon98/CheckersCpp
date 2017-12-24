@@ -37,7 +37,7 @@ void clearScreen(){
 }
 
 //getch(); y getche();//Necesario para usar el "dpad"
-void initTermios(int echo) 
+void initTermios(int echo)
 {
   tcgetattr(0, &old); /* grab old terminal i/o settings */
   new_ = old; /* make new settings same as old settings */
@@ -47,13 +47,13 @@ void initTermios(int echo)
 }
 
 /* Restore old terminal i/o settings */
-void resetTermios(void) 
+void resetTermios(void)
 {
   tcsetattr(0, TCSANOW, &old);
 }
 
 /* Read 1 character - echo defines echo mode */
-char getch_(int echo) 
+char getch_(int echo)
 {
   char ch;
   initTermios(echo);
@@ -63,7 +63,7 @@ char getch_(int echo)
 }
 
 /* Read 1 character without echo */
-char getch(void) 
+char getch(void)
 {
   return getch_(0);
 }
@@ -83,7 +83,7 @@ int menuXY(int a, int A){
 		cout<<cursor;
 		KEY=getch();
 		switch (KEY)
-		{	
+		{
 			case KEY_UP:
 				gotoxy(CTAB,y);cout<<"   ";
 				y--;
@@ -111,24 +111,24 @@ int menuXY(int a, int A){
 
 
 class Tablero{
-	
+
 	private:
 		string tablero[8][8];
-		
+
 	public:
 		//Constructor
-		Tablero(){		
+		Tablero(){
 			for(short i=0;i<8;i++){
 				for(short j=0;j<8;j++){
 					if( i<= 2 && ((i+j)%2 !=0) )
-						tablero[i][j] = piezaNegra; 
+						tablero[i][j] = piezaNegra;
 					else if (i>=5&&((i+j)%2!=0))
-						tablero[i][j] = piezaBlanca; 
-					else 
+						tablero[i][j] = piezaBlanca;
+					else
 						tablero[i][j] = vacio;
 				}
 			}
-		}; 	
+		};
 		void imprimirTablero();
 		void imprimirPiezas();
 		void imprimirCursor(int, int, string);
@@ -150,11 +150,11 @@ void Tablero::imprimirTablero(){
 	// Imprimiendo coordenadas horizontales
 	for(int a = 65; a<73; a++){ // A == 65 - ASCII code
 		gotoxy(i,34);
-		cout << (char)a; 
+		cout << (char)a;
 		i = i+7;
 	}
 	short aux = 2;
-	// Imprimiendo coordenadas verticales 
+	// Imprimiendo coordenadas verticales
 	for(int i=8;i>=1;i--){
 		gotoxy(58,aux);
 		cout << i;
@@ -192,7 +192,7 @@ void Tablero::imprimirPiezas(){
 				cout<<piezaBlanca<<piezaBlanca<<piezaBlanca<<piezaBlanca<<piezaBlanca;
 			}else if(this->tablero[i][j]==piezaNegra){
 				gotoxy(x,y);
-				cout<<piezaNegra<<piezaNegra<<piezaNegra<<piezaNegra<<piezaNegra;	
+				cout<<piezaNegra<<piezaNegra<<piezaNegra<<piezaNegra<<piezaNegra;
 				gotoxy(x,y+1);
 				cout<<piezaNegra<<piezaNegra<<piezaNegra<<piezaNegra<<piezaNegra;
 			}
@@ -221,7 +221,7 @@ void Tablero::seleccionarPieza(string pieza){
 				if (j>7){
 					y=1;
 					j=0;
-				}			
+				}
 			break;
 			case KEY_UP:
 				y=y-4;
@@ -262,7 +262,7 @@ void Tablero::seleccionarPieza(string pieza){
 void Tablero::imprimirCursor(int X, int Y,string casilla){
 	gotoxy(X,Y);
 	cout<<casilla<<casilla<<casilla<<casilla<<casilla<<casilla<<casilla;
-	gotoxy(X,Y+1);cout<<casilla;gotoxy(X+6,Y+1);cout<<casilla;		
+	gotoxy(X,Y+1);cout<<casilla;gotoxy(X+6,Y+1);cout<<casilla;
 	gotoxy(X,Y+2);cout<<casilla;gotoxy(X+6,Y+2);cout<<casilla;
 	gotoxy(X,Y+3);
 	cout<<casilla<<casilla<<casilla<<casilla<<casilla<<casilla<<casilla;
@@ -275,7 +275,7 @@ void Tablero::imprimirCursor(int X, int Y,string casilla){
 
 
 void humanoVShumano(){
-	
+
 	//char coordH;
 	//int turno = 1;
 	Tablero tablero=Tablero();
@@ -283,13 +283,13 @@ void humanoVShumano(){
 	tablero.imprimirTablero();
 	tablero.imprimirPiezas();
 	tablero.seleccionarPieza(piezaBlanca);
-	
-	
+
+
 }
 
 void instrucciones(){
 	short aux = 0;
-	
+
 	do{
 		clearScreen();
 		gotoxy(30,6);
@@ -347,7 +347,7 @@ void info(){
 }
 
 void salir(){
-	
+
 	cout << "\nSaliendo del juego" << endl;
 	usleep(1000000);
 	gotoxy(20,19);
@@ -360,4 +360,3 @@ void salir(){
 	cout << ". " << endl;
 	usleep(2000000);
 }
-
