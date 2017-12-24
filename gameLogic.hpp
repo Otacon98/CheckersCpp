@@ -256,6 +256,9 @@ void Tablero::imprimirLinea(string color) {
 			cout <<color<<color<<color<<color<<color<<color<<color;
 }
 bool Tablero::moverPieza(int x,int y,int newX, int newY) {
+	static int i= 1;
+	gotoxy(80,1);
+	cout << i++;
 
 	if (turno % 2 == 0 && tablero[x][y] != piezaBlanca)
 		return false;
@@ -338,15 +341,19 @@ void Tablero::seleccionarPieza(string pieza){
 			case ENTER:
 
 			int auxI= i, auxJ = j;
+			bool flag;
 
 			do{
 				imprimirCursor((i*7) + 1 , (j*4) +1 ,selector);
+				fflush(stdin);
 				KEY=getch();
 				fflush(stdin);
 				if ((i+j)%2!=0)
 					imprimirCursor((i*7) + 1,(j*4) +1,negro);
 				if((i+j)%2==0)
 					imprimirCursor((i*7) + 1,(j*4) +1,blanco);
+
+				flag = true;
 				fflush(stdin);
 
 				switch (KEY){
@@ -367,14 +374,16 @@ void Tablero::seleccionarPieza(string pieza){
 						if(i>7) i=0;
 					break;
 					case ENTER:
-							if(!moverPieza(auxJ, auxI, j , i)){
-								gotoxy(80,3);
-								cout << "Error, jugada invalida";
-							}else
-								cent = false;
+						flag = false;
 					break;
 				}
-			}while(cent);
+			}while(flag);
+
+			if(!moverPieza(auxJ, auxI, j , i)){
+				gotoxy(80,3);
+				cout << "Error, jugada invalida";
+			}else
+					cent = false;
 			break;
 		}
 	}while(cent);
