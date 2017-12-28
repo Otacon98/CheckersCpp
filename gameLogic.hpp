@@ -22,6 +22,7 @@ static struct termios old, new_;
 #define CTAB 25//Posicion en el eje X del cursor
 #define OTAB 29//Posicion en el eje X de las opciones del menu
 #define cursor "\033[1;38m</>\033[0m"
+#define dos_segundos 2000000
 
 string piezaBlanca="\E[41m░\033[0m";
 string piezaNegra="\E[42m░\033[0m";
@@ -161,12 +162,12 @@ class Tablero{
 		string momentoActual();
 		string fecha();
 		bool botEstaAmenazado(int, int, string);
-		bool botIntentaComer(string);
+		bool botCome(string, string);
 		bool botIntentaEscapar(int, int, string, string);
-		void botJugadaAleatoria(string);
-		bool botOtraPiezaDefiende(int, int);
-		bool botMovimientoEducadoAleatorio();
-		void turnoBot1();
+		void botJugadaAleatoria(string, string);
+		bool botOtraPiezaDefiende(int, int, string, string);
+		bool botMovimientoEducadoAleatorio(string, string);
+		void turnoBot(string, string);
 		//getters
 		// int getTurno(){ return turno;};
 };
@@ -345,9 +346,9 @@ void Tablero::agregarAlHistorialDeJugadas(string jugador, int x, int y, int newX
 	string momento = momentoActual();
 	string jugada;
 	if(jugador == piezaBlanca){
-		jugada = "Rojas - " + momento + ": (" + to_string(x) + "," + to_string(y) + ") -> (" + to_string(newX) + "," + to_string(newY) + ")";
+		jugada = "Rojas - " + momento + ": (" + to_string(y) + "," + to_string(x) + ") -> (" + to_string(newY) + "," + to_string(newX) + ")";
 	}else{
-		jugada = "Verdes - " + momento + ": (" + to_string(x) + "," + to_string(y) + ") -> (" + to_string(newX) + "," + to_string(newY) + ")";
+		jugada = "Verdes - " + momento + ": (" + to_string(y) + "," + to_string(x) + ") -> (" + to_string(newY) + "," + to_string(newX) + ")";
 	}
 
 	historialDeJugadas.push_back(jugada); // agrega de ultimo la ultima jugada dentro de la lista
@@ -394,7 +395,8 @@ int Tablero::contarPiezas(string pieza) {
 	return count;
 }
 void Tablero::seleccionarPieza(string pieza){
-	int KEY,i=0, j=0;
+
+	int KEY, i=0, j=0;
 	bool cent;
 	do{
 
@@ -403,9 +405,9 @@ void Tablero::seleccionarPieza(string pieza){
 		imprimirCursor( (i*7) + 1 , (j*4) +1 ,selector);
 		KEY = getch();
 
-		if((i+j)%2==0)
+		if( (i+j) % 2 == 0)
 			imprimirCursor((i*7) + 1, (j*4) +1,blanco);
-		if ((i+j)%2!=0)
+		if( (i+j) % 2 != 0)
 			imprimirCursor((i*7) + 1, (j*4) +1,negro);
 
 		cent = true;
@@ -435,11 +437,11 @@ void Tablero::seleccionarPieza(string pieza){
 				do{
 					imprimirCursor((i*7) + 1 , (j*4) +1 ,selector);
 					fflush(stdin);
-					KEY=getch();
+					KEY = getch();
 					fflush(stdin);
-					if ((i+j)%2!=0)
+					if( (i+j) % 2 != 0)
 						imprimirCursor((i*7) + 1,(j*4) +1,negro);
-					if((i+j)%2==0)
+					if( (i+j) % 2 == 0)
 						imprimirCursor((i*7) + 1,(j*4) +1,blanco);
 
 					flag = true;
@@ -471,9 +473,10 @@ void Tablero::seleccionarPieza(string pieza){
 			if(!moverPieza(auxJ, auxI, j , i)){
 				gotoxy(80,3);
 				cout << "Error, jugada invalida";
-			}else
-					cent = false;
-					break;
+			}else{
+				cent = false;
+				break;
+			}
 		}
 	}while(cent);
 }
@@ -495,10 +498,18 @@ string Tablero::fecha(){
 }
 
 //###############################################################
-//###################    Funciones del bot    ###################
+//################    Funciones de los bots    ##################
 //###############################################################
 
-// Funciones del bot1
+// Si recorrió todo, y no hay piezas amenazadas, intenta ubicarse en los laterales (si está cerca, entiendase, columna 1 o 6)
+// si no puede:
+// hace un "movimiento educado aleatorio"
+// basicamente una jugada aleatoria pero que no pone piezas en peligro
+// si no puede hacer mas movimientos educados, come a una pieza enemiga
+// si no puede comer a una pieza enemiga, hace una jugada aleatoria.
+
+// Funciones del bot
+
 bool Tablero::botEstaAmenazado(int x, int y, string enemigo){
 
 	if(tablero[x-1][y-1] == enemigo){
@@ -516,7 +527,7 @@ bool Tablero::botEstaAmenazado(int x, int y, string enemigo){
 
 	return false;
 }
-bool Tablero::botIntentaEscapar(int x, int y, string enemigo, string companero){ // solo funciona para el bot1 (piezas verdes)
+bool Tablero::botIntentaEscapar(int x, int y, string companero, string enemigo){ // solo funciona para el bot1 (piezas verdes)
 
 	int coordXEnemigo, coordYEnemigo;
 	// obteniendo coordenadas del enemigo que amenaza
@@ -537,124 +548,413 @@ bool Tablero::botIntentaEscapar(int x, int y, string enemigo, string companero){
 		coordYEnemigo = y+1;
 	}
 
-	//si coordXEnemigo == x-1, está siendo atacado por la izquierda, caso contrario, es derecha (x+1)
-	if(coordXEnemigo == x-1){
-		//'verifica que casilla opuesta (x+1) es segura y se mueve hacia ella, si no es segura, retorna falso (no puede escapar)
-		if(tablero[x+2][y+2] == enemigo){
-			return false; // no puede escapar de forma segura
+	if(companero == piezaNegra){
+
+		//si coordXEnemigo == x-1, está siendo atacado por la izquierda, caso contrario, es derecha (x+1)
+		if(coordXEnemigo == x-1){
+			//'verifica que casilla opuesta (x+1) es segura y se mueve hacia ella, si no es segura, retorna falso (no puede escapar)
+			if(tablero[x+2][y+2] == enemigo || tablero[x+1][y+1] == companero){
+				return false; // no puede escapar de forma segura
+			}
+
+			if(tablero[x][y+2] == enemigo){
+				//si hay una pieza compañera que defiende la casilla igualmente se mueve a ella
+				if(tablero[x+2][y] == companero){
+					tablero[x][y] = vacio;
+					tablero[x+1][y+1] = companero;
+					agregarAlHistorialDeJugadas(companero,x,y,x+1,y+1);
+					return true;
+				}else{
+					return false; //no puede escapar
+				}
+			}else{
+				// la casilla es segura
+				// verificando que está vacia, si no está vacia, un beta ps, que otra pieza intente bloquear.
+				if(tablero[x+1][y+1] == vacio){
+					// convierte a vacio en donde está parada la pieza
+					// y la mueve
+					tablero[x][y] == vacio;
+					tablero[x+1][y+1] == companero;
+					agregarAlHistorialDeJugadas(companero,x,y,x+1,y+1);
+					return true;
+				}else{
+					return false;
+				}
+			}
+		}
+		// si esta siendo atacado por la derecha
+		if(coordXEnemigo == x+1){
+			//'verifica que casilla opuesta (x-1) es segura y se mueve hacia ella, si no es segura, retorna falso (no puede escapar)
+			if(tablero[x-2][y+2] == enemigo){
+				return false; // no puede escapar de forma segura
+			}
+
+			if(tablero[x][y+2] == enemigo){
+				//si hay una pieza compañera que defiende la casilla igualmente se mueve a ella
+				if(tablero[x-2][y] == companero){
+					tablero[x][y] = vacio;
+					tablero[x-1][y+1] = companero;
+					agregarAlHistorialDeJugadas(companero,x,y,x-1,y+1);
+					return true;
+				}else{
+					return false; //no puede escapar
+				}
+			}else{
+				// la casilla es segura
+				// verificando que está vacia, si no está vacia, un beta ps, que otra pieza intente bloquear.
+				if(tablero[x-1][y-1] == vacio){
+					// convierte a vacio en donde está parada la pieza
+					// y la mueve
+					tablero[x][y] == vacio;
+					tablero[x-1][y-1] == companero;
+					agregarAlHistorialDeJugadas(companero,x,y,x-1,y-1);
+					return true;
+				}else{
+					return false;
+				}
+			}
 		}
 
-		if(tablero[x][y+2] == enemigo){
-			//si hay una pieza compañera que defiende la casilla igualmente se mueve a ella
-			if(tablero[x+2][y] == companero){
-				tablero[x][y] == vacio;
-				tablero[x+1][y+1] == companero;
-				return true;
-			}else{
-				return false; //no puede escapar
-			}
-		}else{
-			// la casilla es segura
-			// verificando que está vacia, si no está vacia, un beta ps, que otra pieza intente bloquear.
-			if(tablero[x+1][y+1] == vacio){
-				// convierte a vacio en donde está parada la pieza
-				// y la mueve
-				tablero[x][y] == vacio;
-				tablero[x+1][y+1] == companero;
-				return true;
-			}else{
-				return false;
-			}
-		}
-	}
+	}else if(companero == piezaBlanca){
 
-	// si esta siendo atacado por la derecha
-	if(coordXEnemigo == x+1){
-		//'verifica que casilla opuesta (x-1) es segura y se mueve hacia ella, si no es segura, retorna falso (no puede escapar)
-		if(tablero[x-2][y-2] == enemigo){
-			return false; // no puede escapar de forma segura
+		// si la pieza compañera son blancas (rojas)
+		if(coordXEnemigo == x-1){
+			//'verifica que casilla opuesta (x+1) es segura y se mueve hacia ella, si no es segura, retorna falso (no puede escapar)
+			if(tablero[x+2][y-2] == enemigo || tablero[x+1][y-1] == companero){
+				return false; // no puede escapar de forma segura
+			}
+
+			if(tablero[x][y-2] == enemigo){
+				//si hay una pieza compañera que defiende la casilla igualmente se mueve a ella
+				if(tablero[x+2][y] == companero){
+					tablero[x][y] = vacio;
+					tablero[x+1][y-1] = companero;
+					agregarAlHistorialDeJugadas(companero,x,y,x+1,y-1);
+					return true;
+				}else{
+					return false; //no puede escapar
+				}
+			}else{
+				// la casilla es segura
+				// verificando que está vacia, si no está vacia, un beta ps, que otra pieza intente bloquear.
+				if(tablero[x+1][y-1] == vacio){
+					// convierte a vacio en donde está parada la pieza
+					// y la mueve
+					tablero[x][y] = vacio;
+					tablero[x+1][y-1] = companero;
+					agregarAlHistorialDeJugadas(companero,x,y,x+1,y-1);
+					return true;
+				}else{
+					return false;
+				}
+			}
+		}
+		// si esta siendo atacado por la derecha
+		if(coordXEnemigo == x+1){
+			//'verifica que casilla opuesta (x-1) es segura y se mueve hacia ella, si no es segura, retorna falso (no puede escapar)
+			if(tablero[x-2][y-2] == enemigo){
+				return false; // no puede escapar de forma segura
+			}
+
+			if(tablero[x][y-2] == enemigo){
+				//si hay una pieza compañera que defiende la casilla igualmente se mueve a ella
+				if(tablero[x-2][y] == companero){
+					tablero[x][y] = vacio;
+					tablero[x-1][y-1] = companero;
+					agregarAlHistorialDeJugadas(companero,x,y,x-1,y-1);
+					return true;
+				}else{
+					return false; //no puede escapar
+				}
+			}else{
+				// la casilla es segura
+				// verificando que está vacia, si no está vacia, un beta ps, que otra pieza intente bloquear.
+				if(tablero[x-1][y-1] == vacio){
+					// convierte a vacio en donde está parada la pieza
+					// y la mueve
+					tablero[x][y] == vacio;
+					tablero[x-1][y-1] == companero;
+					agregarAlHistorialDeJugadas(companero,x,y,x-1,y-1);
+					return true;
+				}else{
+					return false;
+				}
+			}
 		}
 
-		if(tablero[x][y+2] == enemigo){
-			//si hay una pieza compañera que defiende la casilla igualmente se mueve a ella
-			if(tablero[x-2][y] == companero){
-				tablero[x][y] == vacio;
-				tablero[x-1][y-1] == companero;
-				return true;
-			}else{
-				return false; //no puede escapar
-			}
-		}else{
-			// la casilla es segura
-			// verificando que está vacia, si no está vacia, un beta ps, que otra pieza intente bloquear.
-			if(tablero[x-1][y-1] == vacio){
-				// convierte a vacio en donde está parada la pieza
-				// y la mueve
-				tablero[x][y] == vacio;
-				tablero[x-1][y-1] == companero;
-				return true;
-			}else{
-				return false;
-			}
-		}
 	}
 
 }
-void Tablero::turnoBot1(){ // bot1 es el de las piezas verdes.
-	short bandera = 0; // 0 = no ha jugado
+void Tablero::botJugadaAleatoria(string companero, string enemigo){
+
+	int bandera = 0;
+	int x, y, side;
+
+	if(companero == piezaBlanca){
+		do{
+			x = rand() % 8 + 1;
+			y = rand() % 8 + 1;
+			if(tablero[x][y] == companero){
+				side = rand() % 2;
+				if(side == 0){
+					if(tablero[x-1][y-1] == vacio){
+						tablero[x][y] = vacio;
+						tablero[x-1][y-1] = companero;
+						agregarAlHistorialDeJugadas(companero, x, y, x-1, y-1);
+						bandera = 1;
+					}
+				}else{
+					if(tablero[x+1][y-1] == vacio){
+						tablero[x][y] = vacio;
+						tablero[x+1][y-1] = companero;
+						agregarAlHistorialDeJugadas(companero, x, y, x+1, y-1);
+						bandera = 1;
+					}
+				}
+			}
+		}while(bandera == 0);
+
+	}else if(companero == piezaNegra){
+		do{
+			x = rand() % 8 + 1;
+			y = rand() % 8 + 1;
+			if(tablero[x][y] == companero){
+				side = rand() % 2;
+				if(side == 0){
+					if(tablero[x-1][y+1] == vacio){
+						tablero[x][y] = vacio;
+						tablero[x-1][y+1] = companero;
+						agregarAlHistorialDeJugadas(companero, x, y, x-1, y+1);
+						bandera = 1;
+					}
+				}else{
+					if(tablero[x+1][y+1] == vacio){
+						tablero[x][y] = vacio;
+						tablero[x+1][y+1] = companero;
+						agregarAlHistorialDeJugadas(companero, x, y, x+1, y+1);
+						bandera = 1;
+					}
+				}
+			}
+		}while(bandera == 0);
+	}
+
+}
+bool Tablero::botCome(string companero, string enemigo){
+
 	for(short i = 0; i<8; i++){
 		for(short j = 0; j<8; j++){
-			if(bandera == 1){
-				// turno contricante
+			if(tablero[i+1][j+1] == enemigo){
+				tablero[i][j] = vacio;
+				tablero[i+1][j+1] = companero;
+				agregarAlHistorialDeJugadas(companero, i, j, i+1, j+1);
+				return true;
+			}else if(tablero[i-1][j+1] == enemigo){
+				tablero[i][j] = vacio;
+				tablero[i-1][j+1] = companero;
+				agregarAlHistorialDeJugadas(companero, i, j, i-1, j+1);
+				return true;
+			}else if(tablero[i+1][j-1] == enemigo){
+				tablero[i][j] = vacio;
+				tablero[i+1][j-1] = companero;
+				agregarAlHistorialDeJugadas(companero, i, j, i+1, j-1);
+				return true;
+			}else if(tablero[i-1][j-1] == enemigo){
+				tablero[i][j] = vacio;
+				tablero[i-1][j-1] = companero;
+				agregarAlHistorialDeJugadas(companero, i, j, i-1, j-1);
+				return true;
 			}
-			if(tablero[i][j] == piezaBlanca){	// piezaBlanca == piezaVerde en el juego (las de arriba, que pertenecen al bot1)
-				// se analiza el entorno de la pieza en la que se esta parado
-				if(botEstaAmenazado(i,j,piezaNegra)){ // true == está amenazado; false lo contrario
-					if(botIntentaEscapar(i,j,piezaNegra, piezaBlanca)){ // true si escapó, false si no puede esacapar
+		}
+	}
+
+	return false;
+}
+bool Tablero::botOtraPiezaDefiende(int x, int y, string companero, string enemigo){
+
+	int coordXEnemigo, coordYEnemigo;
+
+	// obteniendo coordenadas del enemigo que amenaza
+	if(tablero[x-1][y-1] == enemigo){
+			coordXEnemigo = x-1;
+			coordYEnemigo = y-1;
+		}
+	if(tablero[x+1][y-1] == enemigo){
+			coordXEnemigo = x+1;
+			coordYEnemigo = y-1;
+		}
+	if(tablero[x-1][y+1] == enemigo){
+			coordXEnemigo = x-1;
+			coordYEnemigo = y+1;
+		}
+	if(tablero[x+1][y+1] == enemigo){
+			coordXEnemigo = x+1;
+			coordYEnemigo = y+1;
+		}
+
+	if(companero == piezaNegra){
+		if(coordXEnemigo == x-1){
+			if(tablero[x+1][y-1] == companero){
+				botMovimientoEducadoAleatorio(companero, enemigo);
+				return true;
+			}else if(tablero[x+1][y-1] == vacio){
+				if(tablero[x][y-2] == companero){
+					tablero[x][y-2] = vacio;
+					tablero[x+1][y-1] = companero;
+					agregarAlHistorialDeJugadas(companero, x, y-2, x+1, y-1);
+					return true;
+				}
+				if(tablero[x+2][y-2] == companero){
+					tablero[x+2][y-2] = vacio;
+					tablero[x+1][y-1] = companero;
+					agregarAlHistorialDeJugadas(companero, x+2, y-2, x+1, y-1);
+					return true;
+				}
+			}
+		}else if(coordXEnemigo == x+1){
+			if(tablero[x-1][y-1] == companero){
+				botMovimientoEducadoAleatorio(companero, enemigo);
+				return true;
+			}else if(tablero[x-1][y-1] == vacio){
+				if(tablero[x][y-2] == companero){
+					tablero[x][y-2] = vacio;
+					tablero[x-1][y-1] = companero;
+					agregarAlHistorialDeJugadas(companero, x, y-2, x-1, y-1);
+					return true;;
+				}
+				if(tablero[x-2][y-2] == companero){
+					tablero[x-2][y-2] = vacio;
+					tablero[x-1][y-1] = companero;
+					agregarAlHistorialDeJugadas(companero, x-2, y-2, x-1, y-1);
+					return true;
+				}
+			}
+		}
+	}
+
+	if(companero == piezaBlanca){
+		if(coordXEnemigo == x-1){
+			if(tablero[x+1][y-1] == companero){
+				botMovimientoEducadoAleatorio(companero, enemigo);
+				return true;
+			}else if(tablero[x+1][y-1] == vacio){
+				if(tablero[x][y+2] == companero){
+					tablero[x][y+2] = vacio;
+					tablero[x+1][y+1] = companero;
+					agregarAlHistorialDeJugadas(companero, x, y+2, x+1, y+1);
+					return true;
+				}
+				if(tablero[x+2][y+2] == companero){
+					tablero[x+2][y+2] = vacio;
+					tablero[x+1][y+1] = companero;
+					agregarAlHistorialDeJugadas(companero, x+2, y+2, x+1, y+1);
+					return true;
+				}
+			}
+		}else if(coordXEnemigo == x+1){
+			if(tablero[x-1][y+1] == companero){
+				botMovimientoEducadoAleatorio(companero, enemigo);
+				return true;
+			}else if(tablero[x-1][y+1] == vacio){
+				if(tablero[x][y+2] == companero){
+					tablero[x][y+2] = vacio;
+					tablero[x-1][y+1] = companero;
+					agregarAlHistorialDeJugadas(companero, x, y+2, x-1, y+1);
+					return true;
+				}
+				if(tablero[x-2][y-2] == companero){
+					tablero[x-2][y-2] = vacio;
+					tablero[x-1][y-1] = companero;
+					agregarAlHistorialDeJugadas(companero, x-2, y-2, x-1, y-1);
+					return true;
+				}
+			}
+		}
+	}
+}
+bool Tablero::botMovimientoEducadoAleatorio(string companero, string enemigo){
+
+	int bandera = 0;
+	int x, y, side;
+
+	if(companero == piezaBlanca){
+		do{
+			x = rand() % 8;
+			y = rand() % 8;
+			if(tablero[x][y] == companero){
+				side = rand() % 2;
+				if(side == 0){
+					if(tablero[x+1][y-1] == vacio && x != 7 && y != 0){
+						tablero[x][y] = vacio;
+						tablero[x+1][y-1] = companero;
+						agregarAlHistorialDeJugadas(companero, x, y, x+1, y-1);
 						bandera = 1;
-					}else if (botOtraPiezaDefiende(i, j)){ // true si otra pieza puede defender; false lo contrario
+					}
+				}else{
+					if(tablero[x-1][y-1] == vacio && y != 0 && x != 0){
+						tablero[x][y] = vacio;
+						tablero[x-1][y-1] = companero;
+						agregarAlHistorialDeJugadas(companero, x, y, x-1, y-1);
 						bandera = 1;
+					}
+				}
+			}
+		}while(bandera == 0);
+
+	}else if(companero == piezaNegra){
+		do{
+			x = rand() % 8;
+			y = rand() % 8;
+			if(tablero[x][y] == companero){
+				side = rand() % 2;
+				if(side == 0){
+					if(tablero[x+1][y-1] == vacio && y != 0){
+						tablero[x][y] = vacio;
+						tablero[x+1][y-1] = companero;
+						agregarAlHistorialDeJugadas(companero, x, y, x+1, y-1);
+						bandera = 1;
+					}
+				}else{
+					if(tablero[x+1][y+1] == vacio && y != 7){
+						tablero[x][y] = vacio;
+						tablero[x+1][y+1] = companero;
+						agregarAlHistorialDeJugadas(companero, x, y, x+1, y+1);
+						bandera = 1;
+					}
+				}
+			}
+		}while(bandera == 0);
+	}
+}
+void Tablero::turnoBot(string companero, string enemigo){
+
+	for(short i = 0; i<8; i++){
+		for(short j = 0; j<8; j++){
+			if(tablero[i][j] == companero){
+				if(botEstaAmenazado(i,j,enemigo)){ // true == está amenazado; false lo contrario
+					if(botIntentaEscapar(i,j,companero, enemigo)){ // true si escapó, false si no puede esacapar
+						return; // https://stackoverflow.com/questions/346613/how-do-you-exit-from-a-void-function-in-c
+					}else if (botOtraPiezaDefiende(i, j, companero, enemigo)){ // true si nadie está defendiendo a la pieza
+						return;
 					}
 				}
 			}
 		}
 	}
 
-	if(bandera == 1){
-		// turno contricante
-	}
 
-	// Si recorrió todo, y no hay piezas amenazadas, intenta ubicarse en los laterales (si está cerca, entiendase, columna 1 o 6)
-	// si no puede:
-	// hace un "movimiento educado aleatorio"
-	// basicamente una jugada aleatoria pero que no pone piezas en peligro
-	// si no puede hacer mas movimientos educados, come a una pieza enemiga
-	// si no puede comer a una pieza enemiga, hace una jugada aleatoria.
-
-	if(botMovimientoEducadoAleatorio()){
-		bandera = 1;
+	if(botMovimientoEducadoAleatorio(companero, enemigo)){
+		return;
 	}
-	else if(botIntentaComer(piezaNegra)){
-		bandera = 1;
+	else if(botCome(companero, enemigo)){
+		return;
 	}else{
-		botJugadaAleatoria(piezaNegra);
-		bandera = 1;
+		botJugadaAleatoria(companero, enemigo);
+		return;
 	}
 
 }
-void Tablero::botJugadaAleatoria(string enemigo){
 
-}
-bool Tablero::botIntentaComer(string enemigo){
-
-}
-bool Tablero::botOtraPiezaDefiende(int x, int y){
-
-}
-bool Tablero::botMovimientoEducadoAleatorio(){
-
-}
-// Funciones del bot2 (solo se usan en el modo BotVsBot)
 
 //###############################################################
 //###################    Opciones del menu    ###################
@@ -664,7 +964,8 @@ void humanoVShumano(){
 
 	//char coordH;
 	//int turno = 1;
-	Tablero tablero=Tablero();
+	Tablero tablero = Tablero();
+
 	do{
 		clearScreen();
 		tablero.imprimirTablero();
@@ -673,6 +974,7 @@ void humanoVShumano(){
 		tablero.imprimirHistorialJugadas();
 		tablero.seleccionarPieza(piezaBlanca);
 	}while(true);
+
 }
 void instrucciones(){
 	short aux = 0;
@@ -701,8 +1003,36 @@ void instrucciones(){
 	}while(aux != 10);
 	clearScreen();
 }
-void humanoVSbot(){}
-void botVSbot(){}
+void humanoVSbot(){
+
+	Tablero tablero = Tablero();
+	do{
+		clearScreen();
+		tablero.imprimirTablero();
+		tablero.imprimirPiezas();
+		tablero.imprimirOtrosDatos();
+		tablero.imprimirHistorialJugadas();
+		tablero.seleccionarPieza(piezaBlanca);
+		tablero.turnoBot(piezaNegra, piezaBlanca);
+	}while(true);
+
+}
+void botVSbot(){
+
+	Tablero tablero = Tablero();
+	do{
+		clearScreen();
+		tablero.imprimirTablero();
+		tablero.imprimirPiezas();
+		tablero.imprimirOtrosDatos();
+		tablero.imprimirHistorialJugadas();
+		getch();
+		tablero.turnoBot(piezaBlanca, piezaNegra);
+		getch();
+		tablero.turnoBot(piezaNegra, piezaBlanca);
+	}while(true);
+
+}
 void info(){
 	short aux = 0;
 	do{
