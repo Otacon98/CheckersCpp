@@ -8,7 +8,7 @@
 
 using namespace std;
 
-int menu (){
+int menu(){
 		short input;
 		resizeTerminal();
 		clearScreen();
