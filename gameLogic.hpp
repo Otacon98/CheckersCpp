@@ -156,7 +156,6 @@ class Tablero{
 		void imprimirLinea(string);
 		void imprimirHistorialJugadas();
 		void agregarAlHistorialDeJugadas(string, int, int, int, int);
-		void moverPieza();
 		bool moverPieza(int,int,int,int);
 		int contarPiezas(string);
 		string momentoActual();
@@ -355,6 +354,18 @@ void Tablero::agregarAlHistorialDeJugadas(string jugador, int x, int y, int newX
 }
 bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 
+	string companero;
+	string enemigo;
+
+	if( turno % 2 == 0 ){
+		companero = piezaBlanca;
+		enemigo = piezaNegra;
+	}
+	if (turno % 2 != 0 ){
+		companero = piezaNegra;
+		enemigo = piezaBlanca;
+	}
+
 	if (turno % 2 == 0 && tablero[x][y] != piezaBlanca)
 		return false;
 
@@ -376,11 +387,86 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 	if ( (abs(y - newY)) != 1 )
 		return false;
 
-	agregarAlHistorialDeJugadas(piezaNegra, x, y, newX, newY);
+	// Validación por si intentan moverse hacia atrás
+	if(companero == piezaBlanca && x < newX)
+		return false;
+
+	if(companero == piezaNegra && x > newX)
+		return false;
+
+	// si donde se selecciono hay un enemigo
+	if(companero == piezaBlanca && tablero[newX][newY] == enemigo){
+
+		//
+		// CORREGIR: las blancas no comen hacia la derecha y las negras no comen hacia la izquierda
+		//
+
+		// si la direccion es hacia la izquierda
+		if( y > newY ){
+
+			if(tablero[x-2][y-2] == vacio){
+				tablero[newX][newY] = vacio;
+				tablero[x][y] = vacio;
+				tablero[x-2][y-2] = companero;
+				agregarAlHistorialDeJugadas(companero, x, y, x-2, y-2);
+				turno++;
+				return true;
+			}else{
+				// la jugada esta bloqueada
+				return false;
+			}
+		}else{
+			// la direccion es hacia la derecha
+			if(tablero[x+2][y-2] == vacio){
+				tablero[newX][newY] = vacio;
+				tablero[x][y] = vacio;
+				tablero[x+2][y-2] = companero;
+				agregarAlHistorialDeJugadas(companero, x, y, x+2, y-2);
+				turno++;
+				return true;
+			}else{
+				// la jugada esta bloqueada
+				return false;
+			}
+		}
+	}
+
+
+	if(companero == piezaNegra && tablero[newX][newY] == enemigo){
+		// si la direcion es hacia la izquierda
+		if( x > newX ){
+			if(tablero[x-2][y+2] == vacio){
+				tablero[newX][newY] = vacio;
+				tablero[x][y] = vacio;
+				tablero[x-2][y+2] = companero;
+				agregarAlHistorialDeJugadas(companero, x, y, x-2, y+2);
+				turno++;
+				return true;
+			}else{
+				// la jugada esta bloqueada
+				return false;
+			}
+		}else{
+			// si la jugada es hacia la derecha
+			if(tablero[x+2][y+2] == vacio){
+				tablero[newX][newY] = vacio;
+				tablero[x][y] = vacio;
+				tablero[x+2][y+2] = companero;
+				agregarAlHistorialDeJugadas(companero, x, y, x+2, y+2);
+				turno++;
+				return true;
+			}else{
+				// la jugada esta bloqueada
+				return false;
+			}
+		}
+	}
+
+	// si la jugada que realizó no involucra comer, se mueve normalmente hacia la posicion.
+	agregarAlHistorialDeJugadas(companero, x, y, newX, newY);
 	tablero[newX][newY] = tablero[x][y];
 	tablero[x][y] = vacio;
 	turno++;
-
 	return true;
 }
 int Tablero::contarPiezas(string pieza) {
@@ -471,7 +557,7 @@ void Tablero::seleccionarPieza(string pieza){
 				}while(flag);
 
 			if(!moverPieza(auxJ, auxI, j , i)){
-				gotoxy(80,3);
+				gotoxy(80,15);
 				cout << "Error, jugada invalida";
 			}else{
 				cent = false;
