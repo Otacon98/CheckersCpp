@@ -26,8 +26,8 @@ static struct termios old, new_;
 
 string piezaBlanca="\E[41m░\033[0m";
 string piezaNegra="\E[42m░\033[0m";
-string blanco="\E[47m░\033[0m";
-string negro="█";//
+string negro="\E[47m░\033[0m";
+string blanco="\E[40m░\033[0m";
 string vacio=" ";
 string selector="\E[40m░\033[0m";
 int menu();
@@ -50,24 +50,17 @@ string to_string( int x ) {	// convierte int a string para trabajar de forma sen
   return str;
 }
 
-// Ese codigo de abajo no puede ser mas copy paste... :|
-// Que el autor acomode esa verga al castellano.
 
-//getch(); y getche();//Necesario para usar el "dpad"
 void initTermios(int echo) {
-  tcgetattr(0, &old); /* grab old terminal i/o settings */
-  new_ = old; /* make new settings same as old settings */
-  new_.c_lflag &= ~ICANON; /* disable buffered i/o */
-  new_.c_lflag &= echo ? ECHO : ~ECHO; /* set echo mode */
-  tcsetattr(0, TCSANOW, &new_); /* use these new terminal i/o settings now */
+  tcgetattr(0, &old);
+  new_ = old;
+  new_.c_lflag &= ~ICANON;
+  new_.c_lflag &= echo ? ECHO : ~ECHO;
+  tcsetattr(0, TCSANOW, &new_);
 }
-
-/* Restore old terminal i/o settings */
 void resetTermios(void) {
   tcsetattr(0, TCSANOW, &old);
 }
-
-/* Read 1 character - echo defines echo mode */
 char getch_(int echo) {
   char ch;
   initTermios(echo);
@@ -75,8 +68,6 @@ char getch_(int echo) {
   resetTermios();
   return ch;
 }
-
-/* Read 1 character without echo */
 char getch(void) {
   return getch_(0);
 }
@@ -120,6 +111,7 @@ class Tablero{
 		void imprimirHistorialJugadas();
 		void agregarAlHistorialDeJugadas(string, int, int, int, int);
 		bool moverPieza(int,int,int,int);
+		bool comerPieza(int,int,int,int);
 		int contarPiezas(string);
 		string momentoActual();
 		string fecha();
@@ -142,12 +134,10 @@ void Tablero::imprimirTablero(){
 	int flag = 0;
 	for (int k = 1; k < 33; k+=4) {
 		if (flag++ % 2 == 0)
-		for (int i = 0; i < 57; i+=7) {
+		for (int i = 1; i < 57; i+=7) {
 			for (int j = 0; j < 4; j++) {
 
 				gotoxy(i,j+k);
-
-				if (i == 0 ) i++; // Esto es una validacion magica, NO tocar.
 
 				if (i % 2 != 0)
 					imprimirLinea(blanco);
@@ -157,12 +147,10 @@ void Tablero::imprimirTablero(){
 			}
 		} // Hendry mamalo, borra este beta cuando lo leas, mmlo otra vez.
 		else
-		for (int i = 0; i < 57; i+=7) {
+		for (int i = 1; i < 57; i+=7) {
 			for (int j = 0; j < 4; j++) {
 
 				gotoxy(i,j+k);
-
-				if (i == 0 ) i++; // Esto es una validacion magica, NO tocar.
 
 				if (i % 2 == 0)
 					imprimirLinea(blanco);
@@ -309,7 +297,7 @@ void Tablero::agregarAlHistorialDeJugadas(string jugador, int x, int y, int newX
 
 	string momento = momentoActual();
 	string jugada;
-	if(jugador == piezaBlanca){
+	if(turno % 2 == 0){
 		jugada = "Rojas - " + momento + ": (" + to_string(y) + "," + to_string(x) + ") -> (" + to_string(newY) + "," + to_string(newX) + ")";
 	}else{
 		jugada = "Verdes - " + momento + ": (" + to_string(y) + "," + to_string(x) + ") -> (" + to_string(newY) + "," + to_string(newX) + ")";
@@ -318,6 +306,31 @@ void Tablero::agregarAlHistorialDeJugadas(string jugador, int x, int y, int newX
 	historialDeJugadas.push_back(jugada); // agrega de ultimo la ultima jugada dentro de la lista
 }
 bool Tablero::moverPieza(int x, int y, int newX, int newY) {
+
+	/*Shitpost HendryXX1: Asi quedaria la funcion en la que estoy trabajando, voy a hacer el commit de una vez
+	Pero si todo va fine, subo la funcion "Comer ficha" el 3E.
+
+	if (tablero[x][y] != pieza)
+		return false;
+
+	if ((newX + newY) % 2 == 0)
+		return false;
+
+	if (tablero[newX][newY] == tablero[x][y])
+		return false;
+
+	if (newX == x && newY == y)
+		return false;
+
+	if ( (abs(x - newX)) == 2 && (abs(y - newY)) == 2)//Que pasa si es una reyna?
+		return(comerPieza(x, y, newX, newY));//Llamado a la funcion comer pieza donda la magia ocurre.
+
+	if ( (abs(y - newY)) != 1 )
+		return false;
+
+	if ( (abs(y - newY)) != 1 )
+		return false;
+	*/
 
 	string companero;
 	string enemigo;
@@ -431,6 +444,36 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 	turno++;
 	return true;
 }
+bool Tablero::comerPieza(int x, int y, int newX, int newY){
+	//Aqui empieza la mememagia...
+	string pieza;//La pieza que se tiene que comer
+	bool flag;
+	if (turno % 2 != 0){
+		pieza = piezaNegra;
+		flag = true;
+	}
+	else{
+		pieza = piezaBlanca;
+		flag = false;
+	}
+	if (flag){
+		if (x > newX && tablero[newX+1][newY-1] != pieza)
+			return false;
+		if (x < newX && tablero[newX-1][newY-1] != pieza)
+			return false;
+
+	}else{
+		if (x > newX && tablero[newX+1][newY+1] != pieza)
+			return false;
+		if (x < newX && tablero[newX-1][newY+1] != pieza)
+			return false;
+	}
+	agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
+	tablero[newX][newY] = tablero[x][y];
+	tablero[x][y] = vacio;
+	turno++;
+	return true;
+}
 int Tablero::contarPiezas(string pieza) {
 	int count = 0;
 	for (int i = 0; i < 8; i++) {
@@ -447,9 +490,6 @@ void Tablero::seleccionarPieza(string pieza){
 	int KEY, i=0, j=0;
 	bool cent;
 	do{
-
-		gotoxy(80,3);
-		cout << "                 ";
 		imprimirCursor( (i*7) + 1 , (j*4) +1 ,selector);
 		KEY = getch();
 
@@ -483,8 +523,9 @@ void Tablero::seleccionarPieza(string pieza){
 			case ENTER:
 				int auxI= i, auxJ = j;
 				bool flag;
-
-				do{
+				if((turno%2==0&&tablero[j][i]==piezaBlanca)||(turno%2!=0&&tablero[j][i]==piezaNegra))//Valida que la pieza seleccionada sea la del turno correspondiente.
+					flag = true;
+				while(flag){
 					imprimirCursor((i*7) + 1 , (j*4) +1 ,selector);
 					fflush(stdin);
 					KEY = getch();
@@ -493,6 +534,8 @@ void Tablero::seleccionarPieza(string pieza){
 						imprimirCursor((i*7) + 1,(j*4) +1,negro);
 					if( (i+j) % 2 == 0)
 						imprimirCursor((i*7) + 1,(j*4) +1,blanco);
+					if(i==auxI && j==auxJ)
+						imprimirCursor((i*7) + 1,(j*4) +1,selector);
 
 					flag = true;
 					fflush(stdin);
@@ -517,14 +560,19 @@ void Tablero::seleccionarPieza(string pieza){
 						case ENTER:
 							flag = false;
 							break;
+							break;
 					}
-				}while(flag);
+				};
+
+				imprimirCursor((auxI*7) + 1,(auxJ*4) +1,blanco);//Borra el cursor temporal para evitar problemas posteriores.
 
 			if(!moverPieza(auxJ, auxI, j , i)){
 				gotoxy(80,15);
 				cout << "Error, jugada invalida";
 			}else{
 				cent = false;
+				gotoxy(80,3);
+				cout << "                           ";
 				break;
 			}
 		}
