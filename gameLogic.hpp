@@ -29,7 +29,7 @@ string piezaNegra="\E[42m░\033[0m";
 string negro="\E[47m░\033[0m";
 string blanco="\E[40m░\033[0m";
 string vacio=" ";
-string selector="\E[40m░\033[0m";
+string selector="\E[46m░\033[0m";
 int menu();
 void resizeTerminal(){
 	cout << "\e[8;35;120t";
@@ -307,10 +307,21 @@ void Tablero::agregarAlHistorialDeJugadas(string jugador, int x, int y, int newX
 }
 bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 
-	/*Shitpost HendryXX1: Asi quedaria la funcion en la que estoy trabajando, voy a hacer el commit de una vez
-	Pero si todo va fine, subo la funcion "Comer ficha" el 3E.
+	string companero;
 
-	if (tablero[x][y] != pieza)
+	if( turno % 2 == 0 ){
+		companero = piezaBlanca;
+	}
+	if (turno % 2 != 0 ){
+		companero = piezaNegra;
+	}
+	if(companero == piezaBlanca && x < newX)
+		return false;
+
+	if(companero == piezaNegra && x > newX)
+		return false;
+	
+	if (tablero[newX][newY] != vacio)
 		return false;
 
 	if ((newX + newY) % 2 == 0)
@@ -324,120 +335,18 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 
 	if ( (abs(x - newX)) == 2 && (abs(y - newY)) == 2)//Que pasa si es una reyna?
 		return(comerPieza(x, y, newX, newY));//Llamado a la funcion comer pieza donda la magia ocurre.
-
+	
 	if ( (abs(y - newY)) != 1 )
 		return false;
 
 	if ( (abs(y - newY)) != 1 )
 		return false;
-	*/
-
-	string companero;
-	string enemigo;
-
-	if( turno % 2 == 0 ){
-		companero = piezaBlanca;
-		enemigo = piezaNegra;
-	}
-	if (turno % 2 != 0 ){
-		companero = piezaNegra;
-		enemigo = piezaBlanca;
-	}
-
-	if (turno % 2 == 0 && tablero[x][y] != piezaBlanca)
-		return false;
-
-	if (turno % 2 != 0 && tablero[x][y] != piezaNegra)
-		return false;
-
-	if( newX % 2 == 0 && newY % 2 == 0 )
-		return false;
-
-	if( newX % 2 != 0 && newY % 2 != 0 )
-		return false;
-
-	if (tablero[newX][newY] == tablero[x][y])
-		return false;
-
-	if ( (abs(x - newX)) != 1 )
-		return false;
-
-	if ( (abs(y - newY)) != 1 )
-		return false;
-
-	// Validación por si intentan moverse hacia atrás
-	if(companero == piezaBlanca && x < newX)
-		return false;
-
-	if(companero == piezaNegra && x > newX)
-		return false;
-
-	// si donde se selecciono hay un enemigo
-	if(companero == piezaBlanca && tablero[newX][newY] == enemigo){
-
-		//
-		// CORREGIR: las blancas no comen hacia la derecha y las negras no comen hacia la izquierda
-		//
-
-		// si la direccion es hacia la izquierda
-		if( y > newY ){
-
-			if(tablero[x-2][y-2] == vacio){
-				tablero[newX][newY] = vacio;
-				tablero[x][y] = vacio;
-				tablero[x-2][y-2] = companero;
-				agregarAlHistorialDeJugadas(companero, x, y, x-2, y-2);
-				// si comió el turno sigue siendo de ese jugador
-				return true;
-			}else{
-				// la jugada esta bloqueada
-				return false;
-			}
-		}else{
-			// la direccion es hacia la derecha
-			if(tablero[x+2][y-2] == vacio){
-				tablero[newX][newY] = vacio;
-				tablero[x][y] = vacio;
-				tablero[x+2][y-2] = companero;
-				agregarAlHistorialDeJugadas(companero, x, y, x+2, y-2);
-				return true;
-			}else{
-				// la jugada esta bloqueada
-				return false;
-			}
-		}
-	}
-
-
-	if(companero == piezaNegra && tablero[newX][newY] == enemigo){
-		// si la direcion es hacia la izquierda
-		if( x > newX ){
-			if(tablero[x-2][y+2] == vacio){
-				tablero[newX][newY] = vacio;
-				tablero[x][y] = vacio;
-				tablero[x-2][y+2] = companero;
-				agregarAlHistorialDeJugadas(companero, x, y, x-2, y+2);
-				return true;
-			}else{
-				// la jugada esta bloqueada
-				return false;
-			}
-		}else{
-			// si la jugada es hacia la derecha
-			if(tablero[x+2][y+2] == vacio){
-				tablero[newX][newY] = vacio;
-				tablero[x][y] = vacio;
-				tablero[x+2][y+2] = companero;
-				agregarAlHistorialDeJugadas(companero, x, y, x+2, y+2);
-				return true;
-			}else{
-				// la jugada esta bloqueada
-				return false;
-			}
-		}
-	}
-
+		
+	/*shitposting V2.0: Valide todo en la funcion "comer pieza"... para capturar la pieza te tienes
+	 que situar en la posicion donde va a caer la pieza...*/
+	
 	// si la jugada que realizó no involucra comer, se mueve normalmente hacia la posicion.
+	
 	agregarAlHistorialDeJugadas(companero, x, y, newX, newY);
 	tablero[newX][newY] = tablero[x][y];
 	tablero[x][y] = vacio;
@@ -445,33 +354,65 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 	return true;
 }
 bool Tablero::comerPieza(int x, int y, int newX, int newY){
+	
 	//Aqui empieza la mememagia...
 	string pieza;//La pieza que se tiene que comer
-	bool flag;
+	int auxX, auxY;//Posicion axuliar, dnde esta el enemigo...
+	bool flag=true;//Si ya se guardo la posicion, etonces no sigue buscando, porsi habian mas de dos posible jugadas para comer...
+	
 	if (turno % 2 != 0){
-		pieza = piezaNegra;
-		flag = true;
-	}
-	else{
 		pieza = piezaBlanca;
-		flag = false;
-	}
-	if (flag){
-		if (x > newX && tablero[newX+1][newY-1] != pieza)
-			return false;
-		if (x < newX && tablero[newX-1][newY-1] != pieza)
-			return false;
-
+		
+		if ((y > newY) && (tablero[x+1][y-1] == pieza) && flag){//La matriz esta invertida...
+			auxX=x+1;
+			auxY=y-1;
+			flag = false;
+		}
+		if ((y < newY) && (tablero[x+1][y+1] == pieza) && flag){
+			auxX=x+1;
+			auxY=y+1;
+			flag = false;
+		}
 	}else{
-		if (x > newX && tablero[newX+1][newY+1] != pieza)
-			return false;
-		if (x < newX && tablero[newX-1][newY+1] != pieza)
-			return false;
+		pieza = piezaNegra;
+		if ((y > newY) && (tablero[x-1][y-1] == pieza) && flag){
+			auxX=x-1;
+			auxY=y-1;
+			flag = false;
+		}
+		if ((y < newY) && (tablero[x-1][y+1] == pieza) && flag){
+			auxX=x-1;
+			auxY=y+1;
+			flag = false;
+		}
 	}
+	
+	if (flag) return false;//Si no se baja la bandera, no es posible comer a pieza...
+	
 	agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
 	tablero[newX][newY] = tablero[x][y];
 	tablero[x][y] = vacio;
-	turno++;
+	tablero[auxX][auxY] = vacio;//Eliminando al enemigo...
+	
+	
+	//Comer doble.... //Aqui es que se pone feo...
+	//Hendryxx1: Comer triple es una jugada vailda?, porque si no lo es es necesario una banera aqui...
+	if (turno%2 == 0){
+		if ( (tablero[newX-1][newY-1] == pieza ) && ( tablero[newX-2][newY-2] == vacio ))//Verifica que alla via libre.
+			comerPieza(newX, newY, newX-2, newY-2);
+		else if ( (tablero[newX-1][newY+1] == pieza) && (tablero[newX-2][newY+2] == vacio))
+			comerPieza(newX, newY, newX-2, newY+2);
+		else 
+			turno++;
+	}else if (turno%2 != 0){
+		if ( (tablero[newX+1][newY+1] == pieza ) && ( tablero[newX+2][newY+2] == vacio) )//Verifica que alla via libre.
+			comerPieza( newX, newY, newX+2, newY+2 );
+		else if ( (tablero[newX+1][newY-1] == pieza ) && ( tablero[newX+2][newY-2] == vacio ))
+			comerPieza( newX, newY, newX+2, newY-2 );
+		else 
+			turno++;//Solo incrementa el turno cando no tiene que mas comer...
+	}
+	
 	return true;
 }
 int Tablero::contarPiezas(string pieza) {
