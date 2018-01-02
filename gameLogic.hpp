@@ -30,7 +30,7 @@ string blanco="\E[47m░\033[0m";
 string negro="█";//
 string vacio=" ";
 string selector="\E[40m░\033[0m";
-
+int menu();
 void resizeTerminal(){
 	cout << "\e[8;35;120t";
 }
@@ -80,43 +80,6 @@ char getch_(int echo) {
 char getch(void) {
   return getch_(0);
 }
-
-
-//###############################################################
-//########################     MENU     #########################
-//###############################################################
-
-
-int menuXY(int a, int A){
-	int KEY;
-	int y=a;
-	A=A+a;
-	do{
-		gotoxy(CTAB,y);
-		cout<<cursor;
-		KEY=getch();
-		switch (KEY)
-		{
-			case KEY_UP:
-				gotoxy(CTAB,y);cout<<"   ";
-				y--;
-				if (y==(a-1))
-					y=(A-1);
-			break;
-			case KEY_DO:
-				gotoxy(CTAB,y);cout<<"   ";
-				y++;
-				if (y==A)
-					y=a;
-			break;
-			case ENTER:
-				return (y-a+1);
-			break;
-		}
-	}while (KEY!=ENTER);
-	return (y-a+1);
-}
-
 
 //###############################################################
 //####################     Clase tablero     ####################
@@ -271,6 +234,8 @@ void Tablero::imprimirOtrosDatos() {
 		gotoxy(80,7);
 		cout << "Esperando jugada";
 
+		gotoxy(75,34);
+		cout << "[ESC] Salir  [F1] Guardar Partida";
 }
 void Tablero::imprimirLinea(string color) {
 
@@ -409,7 +374,7 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 				tablero[x][y] = vacio;
 				tablero[x-2][y-2] = companero;
 				agregarAlHistorialDeJugadas(companero, x, y, x-2, y-2);
-				turno++;
+				// si comió el turno sigue siendo de ese jugador
 				return true;
 			}else{
 				// la jugada esta bloqueada
@@ -422,7 +387,6 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 				tablero[x][y] = vacio;
 				tablero[x+2][y-2] = companero;
 				agregarAlHistorialDeJugadas(companero, x, y, x+2, y-2);
-				turno++;
 				return true;
 			}else{
 				// la jugada esta bloqueada
@@ -440,7 +404,6 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 				tablero[x][y] = vacio;
 				tablero[x-2][y+2] = companero;
 				agregarAlHistorialDeJugadas(companero, x, y, x-2, y+2);
-				turno++;
 				return true;
 			}else{
 				// la jugada esta bloqueada
@@ -453,7 +416,6 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 				tablero[x][y] = vacio;
 				tablero[x+2][y+2] = companero;
 				agregarAlHistorialDeJugadas(companero, x, y, x+2, y+2);
-				turno++;
 				return true;
 			}else{
 				// la jugada esta bloqueada
@@ -490,6 +452,8 @@ void Tablero::seleccionarPieza(string pieza){
 		cout << "                 ";
 		imprimirCursor( (i*7) + 1 , (j*4) +1 ,selector);
 		KEY = getch();
+
+		// agregar si el usuario presiona ESC o F1
 
 		if( (i+j) % 2 == 0)
 			imprimirCursor((i*7) + 1, (j*4) +1,blanco);
@@ -1053,10 +1017,38 @@ void Tablero::turnoBot(string companero, string enemigo){
 
 }
 
-
 //###############################################################
 //###################    Opciones del menu    ###################
 //###############################################################
+int menuXY(int a, int A){
+	int KEY;
+	int y=a;
+	A=A+a;
+	do{
+		gotoxy(CTAB,y);
+		cout<<cursor;
+		KEY=getch();
+		switch (KEY)
+		{
+			case KEY_UP:
+				gotoxy(CTAB,y);cout<<"   ";
+				y--;
+				if (y==(a-1))
+					y=(A-1);
+			break;
+			case KEY_DO:
+				gotoxy(CTAB,y);cout<<"   ";
+				y++;
+				if (y==A)
+					y=a;
+			break;
+			case ENTER:
+				return (y-a+1);
+			break;
+		}
+	}while (KEY!=ENTER);
+	return (y-a+1);
+}
 void PressEnterToContinue(){
   int c;
   fflush( stdout );
@@ -1178,4 +1170,48 @@ void salir(){
 	gotoxy(24,19);
 	cout << ". " << endl;
 	usleep(2000000);
+}
+int menu(){
+		short input;
+		resizeTerminal();
+		clearScreen();
+		gotoxy(33,6);
+		cout << "\033[1;20mB I E N V E N I D O\033[0m\n";
+		gotoxy(33,7);
+		cout << "\033[1;20mA  D A M A S  C H I N A S\033[0m\n";
+		gotoxy(OTAB,10);
+		cout << "\033[1;38m[1].\033[0m Humano contra Humano\n";
+		gotoxy(OTAB,11);
+		cout << "\033[1;38m[2].\033[0m Humano contra Bot\n";
+		gotoxy(OTAB,12);
+		cout << "\033[1;38m[3].\033[0m Bot contra Bot\n";
+		gotoxy(OTAB,13);
+		cout << "\033[1;38m[4].\033[0m Instrucciones\n";
+		gotoxy(OTAB,14);
+		cout << "\033[1;38m[5].\033[0m Información\n";
+		gotoxy(OTAB,15);
+		cout << "\033[1;38m[6].\033[0m Salir\n";
+		input=menuXY(10,6);
+		switch(input){
+			case 1:
+				humanoVShumano();
+				break;
+			case 2:
+				humanoVSbot();
+				break;
+			case 3:
+				botVSbot();
+			case 4:
+				instrucciones();
+				break;
+			case 5:
+				clearScreen();
+				info();
+				break;
+			case 6:
+				salir();
+				break;
+
+	}
+	return (1);
 }
