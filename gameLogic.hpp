@@ -9,6 +9,7 @@
 #include <string>
 #include <math.h>
 #include <cassert>
+#include <fstream>
 
 using namespace std;
 static struct termios old, new_;
@@ -17,10 +18,11 @@ static struct termios old, new_;
 #define KEY_DO 66
 #define KEY_DE 67
 #define KEY_IZ 68
+#define KEY_F2 19
 #define ENTER 10
 #define ESC 27
-#define CTAB 25//Posicion en el eje X del cursor
-#define OTAB 29//Posicion en el eje X de las opciones del menu
+#define CTAB 38//Posicion en el eje X del cursor
+#define OTAB 43//Posicion en el eje X de las opciones del menu
 #define cursor "\033[1;38m</>\033[0m"
 #define dos_segundos 2000000
 
@@ -30,6 +32,7 @@ string negro="\E[47m░\033[0m";
 string blanco="\E[40m░\033[0m";
 string vacio=" ";
 string selector="\E[46m░\033[0m";
+
 int menu();
 void resizeTerminal(){
 	cout << "\e[8;35;120t";
@@ -40,6 +43,24 @@ void gotoxy(int x,int y){
 void clearScreen(){
 	cout << "\033[2J";
 }
+void PressEnterToContinue(){
+  int c;
+  fflush( stdout );
+  do c = getchar(); while ((c != '\n') && (c != EOF));
+}
+void salir(){
+	cout << "\nSaliendo del juego" << endl;
+	usleep(1000000);
+	gotoxy(20,19);
+	cout << ". " << endl;
+	usleep(1000000);
+	gotoxy(22,19);
+	cout << ". " << endl;
+	usleep(1000000);
+	gotoxy(24,19);
+	cout << ". " << endl;
+	usleep(2000000);
+}
 string to_string( int x ) {	// convierte int a string para trabajar de forma sencilla la forma en que se guardará el historial de jugadas
   int length = snprintf( NULL, 0, "%d", x );
   assert( length >= 0 );
@@ -49,8 +70,6 @@ string to_string( int x ) {	// convierte int a string para trabajar de forma sen
   delete[] buf;
   return str;
 }
-
-
 void initTermios(int echo) {
   tcgetattr(0, &old);
   new_ = old;
@@ -76,7 +95,6 @@ char getch(void) {
 //####################     Clase tablero     ####################
 //###############################################################
 
-
 class Tablero{
 
 	private:
@@ -99,6 +117,32 @@ class Tablero{
 			turno = 0;
 			historialDeJugadas.push_back("Partida iniciada " + fecha() + " a las: " + momentoActual());
 		};
+		Tablero(list<string> historialDeJugadasGuardado){
+
+			string STRING_AUX;
+			char CHAR_AUX;
+			list<string>::iterator iterador = historialDeJugadasGuardado.begin();
+			while( iterador != historialDeJugadasGuardado.end() ){
+				// metiendo elemento por elemento el historial guardado en el historial local
+				historialDeJugadas.push_back( (*iterador) );
+				iterador++;
+			}
+
+			STRING_AUX = historialDeJugadasGuardado.back();
+			CHAR_AUX = (char) STRING_AUX[0];
+
+			//mano voy a llorar, cuando corrijas esto, borra este comentario, thx bye <3
+
+
+			// si en la ultima jugada registrada
+			// el primer caracter es R, es que el ultimo en jugar fueron las rojas
+			if( CHAR_AUX == "R"){
+				turno = 1;
+			}else{
+				turno = 0;
+			}
+
+		};
 
 		//Metodos
 		void imprimirTablero();
@@ -110,6 +154,7 @@ class Tablero{
 		void imprimirLinea(string);
 		void imprimirHistorialJugadas();
 		void agregarAlHistorialDeJugadas(string, int, int, int, int);
+		void guardarPartida();
 		bool moverPieza(int,int,int,int);
 		bool comerPieza(int,int,int,int);
 		int contarPiezas(string);
@@ -122,6 +167,7 @@ class Tablero{
 		bool botOtraPiezaDefiende(int, int, string, string);
 		bool botMovimientoEducadoAleatorio(string, string);
 		void turnoBot(string, string);
+
 		//getters
 		// int getTurno(){ return turno;};
 };
@@ -320,7 +366,7 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 
 	if(companero == piezaNegra && x > newX)
 		return false;
-	
+
 	if (tablero[newX][newY] != vacio)
 		return false;
 
@@ -335,18 +381,18 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 
 	if ( (abs(x - newX)) == 2 && (abs(y - newY)) == 2)//Que pasa si es una reyna?
 		return(comerPieza(x, y, newX, newY));//Llamado a la funcion comer pieza donda la magia ocurre.
-	
+
 	if ( (abs(y - newY)) != 1 )
 		return false;
 
 	if ( (abs(y - newY)) != 1 )
 		return false;
-		
+
 	/*shitposting V2.0: Valide todo en la funcion "comer pieza"... para capturar la pieza te tienes
 	 que situar en la posicion donde va a caer la pieza...*/
-	
+
 	// si la jugada que realizó no involucra comer, se mueve normalmente hacia la posicion.
-	
+
 	agregarAlHistorialDeJugadas(companero, x, y, newX, newY);
 	tablero[newX][newY] = tablero[x][y];
 	tablero[x][y] = vacio;
@@ -354,15 +400,15 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 	return true;
 }
 bool Tablero::comerPieza(int x, int y, int newX, int newY){
-	
+
 	//Aqui empieza la mememagia...
 	string pieza;//La pieza que se tiene que comer
 	int auxX, auxY;//Posicion axuliar, dnde esta el enemigo...
 	bool flag=true;//Si ya se guardo la posicion, etonces no sigue buscando, porsi habian mas de dos posible jugadas para comer...
-	
+
 	if (turno % 2 != 0){
 		pieza = piezaBlanca;
-		
+
 		if ((y > newY) && (tablero[x+1][y-1] == pieza) && flag){//La matriz esta invertida...
 			auxX=x+1;
 			auxY=y-1;
@@ -386,15 +432,15 @@ bool Tablero::comerPieza(int x, int y, int newX, int newY){
 			flag = false;
 		}
 	}
-	
+
 	if (flag) return false;//Si no se baja la bandera, no es posible comer a pieza...
-	
+
 	agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
 	tablero[newX][newY] = tablero[x][y];
 	tablero[x][y] = vacio;
 	tablero[auxX][auxY] = vacio;//Eliminando al enemigo...
-	
-	
+
+
 	//Comer doble.... //Aqui es que se pone feo...
 	//Hendryxx1: Comer triple es una jugada vailda?, porque si no lo es es necesario una banera aqui...
 	if (turno%2 == 0){
@@ -402,17 +448,17 @@ bool Tablero::comerPieza(int x, int y, int newX, int newY){
 			comerPieza(newX, newY, newX-2, newY-2);
 		else if ( (tablero[newX-1][newY+1] == pieza) && (tablero[newX-2][newY+2] == vacio))
 			comerPieza(newX, newY, newX-2, newY+2);
-		else 
+		else
 			turno++;
 	}else if (turno%2 != 0){
 		if ( (tablero[newX+1][newY+1] == pieza ) && ( tablero[newX+2][newY+2] == vacio) )//Verifica que alla via libre.
 			comerPieza( newX, newY, newX+2, newY+2 );
 		else if ( (tablero[newX+1][newY-1] == pieza ) && ( tablero[newX+2][newY-2] == vacio ))
 			comerPieza( newX, newY, newX+2, newY-2 );
-		else 
+		else
 			turno++;//Solo incrementa el turno cando no tiene que mas comer...
 	}
-	
+
 	return true;
 }
 int Tablero::contarPiezas(string pieza) {
@@ -535,19 +581,38 @@ string Tablero::fecha(){
   strftime(buf, sizeof(buf), "%d-%m-%Y", &tstruct);
   return buf;
 }
+void Tablero::guardarPartida(){
+
+	string NOMBRE;
+	string FULLROUTE;
+	list<string>::iterator iterador = historialDeJugadas.begin();	// creando el iterador para la lista del historial
+
+	clearScreen();
+	gotoxy(60,20);
+
+	cout << "Introduzca el nombre con el cual desea guardar su partida: " << endl;
+	cin >> NOMBRE;
+	FULLROUTE	= "partidas-guardadas/" + NOMBRE + ".txt";
+	ofstream archivo(FULLROUTE.c_str()); // creando el archivo donde se almacenará la partida
+
+	while( iterador != historialDeJugadas.end() ){
+		// insertando en el archivo, el historial, linea por linea
+		archivo << (*iterador) << endl;
+		iterador++;
+	}
+
+	archivo.close();
+	gotoxy(60,25);
+	cout << "Partida guardada exitosamente. (" << NOMBRE << ".txt)" << endl;
+	PressEnterToContinue();
+	menu();
+
+	return;
+}
 
 //###############################################################
 //################    Funciones de los bots    ##################
 //###############################################################
-
-// Si recorrió todo, y no hay piezas amenazadas, intenta ubicarse en los laterales (si está cerca, entiendase, columna 1 o 6)
-// si no puede:
-// hace un "movimiento educado aleatorio"
-// basicamente una jugada aleatoria pero que no pone piezas en peligro
-// si no puede hacer mas movimientos educados, come a una pieza enemiga
-// si no puede comer a una pieza enemiga, hace una jugada aleatoria.
-
-// Funciones del bot
 
 bool Tablero::botEstaAmenazado(int x, int y, string companero, string enemigo){
 
@@ -1009,6 +1074,7 @@ void Tablero::turnoBot(string companero, string enemigo){
 //###############################################################
 //###################    Opciones del menu    ###################
 //###############################################################
+
 int menuXY(int a, int A){
 	int KEY;
 	int y=a;
@@ -1037,11 +1103,6 @@ int menuXY(int a, int A){
 		}
 	}while (KEY!=ENTER);
 	return (y-a+1);
-}
-void PressEnterToContinue(){
-  int c;
-  fflush( stdout );
-  do c = getchar(); while ((c != '\n') && (c != EOF));
 }
 void humanoVShumano(){
 
@@ -1121,6 +1182,51 @@ void botVSbot(){
 	}while(true);
 
 }
+void cargarPartida(){
+
+	string NOMBRE;
+	string FULLROUTE;
+	string linea;
+	list<string> historialGuardado;
+	ifstream archivo;
+
+	clearScreen();
+	gotoxy(45,10);
+
+	cout << "Ingrese el nombre de la partida a cargar: " << endl;
+	cin >> NOMBRE;
+	FULLROUTE	= "partidas-guardadas/" + NOMBRE + ".txt";
+
+	// abriendo el archivo
+	archivo.open(FULLROUTE.c_str()); // leyendo el archivo suministrado
+	if(archivo.is_open()){
+		gotoxy(45,15);
+		cout << "Archivo cargado exitosamente" << endl;
+		while( getline(archivo, linea) ){
+			// insertando en el archivo, el historial, linea por linea
+			historialGuardado.push_back(linea);
+		}
+		archivo.close();
+	}else{
+		gotoxy(45,15);
+		cout << "No existe esa partida guardada" << endl;
+		return;
+	}
+	// mientras no haya llegado al final del archivo
+	// (lo está recorriendo por lineas)
+
+
+	Tablero tablero = Tablero(historialGuardado);
+
+	do{
+		clearScreen();
+		tablero.imprimirTablero();
+		tablero.imprimirPiezas();
+		tablero.imprimirOtrosDatos();
+		tablero.imprimirHistorialJugadas();
+		tablero.seleccionarPieza(piezaBlanca);
+	}while(true);
+}
 void info(){
 	short aux = 0;
 	do{
@@ -1147,60 +1253,56 @@ void info(){
 	}while(aux != 10);
 	clearScreen();
 }
-void salir(){
-	cout << "\nSaliendo del juego" << endl;
-	usleep(1000000);
-	gotoxy(20,19);
-	cout << ". " << endl;
-	usleep(1000000);
-	gotoxy(22,19);
-	cout << ". " << endl;
-	usleep(1000000);
-	gotoxy(24,19);
-	cout << ". " << endl;
-	usleep(2000000);
-}
 int menu(){
+		bool aux = true;
 		short input;
 		resizeTerminal();
-		clearScreen();
-		gotoxy(33,6);
-		cout << "\033[1;20mB I E N V E N I D O\033[0m\n";
-		gotoxy(33,7);
-		cout << "\033[1;20mA  D A M A S  C H I N A S\033[0m\n";
-		gotoxy(OTAB,10);
-		cout << "\033[1;38m[1].\033[0m Humano contra Humano\n";
-		gotoxy(OTAB,11);
-		cout << "\033[1;38m[2].\033[0m Humano contra Bot\n";
-		gotoxy(OTAB,12);
-		cout << "\033[1;38m[3].\033[0m Bot contra Bot\n";
-		gotoxy(OTAB,13);
-		cout << "\033[1;38m[4].\033[0m Instrucciones\n";
-		gotoxy(OTAB,14);
-		cout << "\033[1;38m[5].\033[0m Información\n";
-		gotoxy(OTAB,15);
-		cout << "\033[1;38m[6].\033[0m Salir\n";
-		input=menuXY(10,6);
-		switch(input){
-			case 1:
-				humanoVShumano();
-				break;
-			case 2:
-				humanoVSbot();
-				break;
-			case 3:
-				botVSbot();
-			case 4:
-				instrucciones();
-				break;
-			case 5:
-				clearScreen();
-				info();
-				break;
-			case 6:
-				salir();
-				break;
-
-	}
+		while(aux){
+			clearScreen();
+			gotoxy(45,10);
+			cout << "\033[1;20mB I E N V E N I D O\033[0m\n";
+			gotoxy(48,11);
+			cout << "\033[1;20mA  D A M A S\033[0m\n";
+			gotoxy(OTAB,15);
+			cout << "\033[1;38m[1].\033[0m Humano contra Humano\n";
+			gotoxy(OTAB,16);
+			cout << "\033[1;38m[2].\033[0m Humano contra Bot\n";
+			gotoxy(OTAB,17);
+			cout << "\033[1;38m[3].\033[0m Bot contra Bot\n";
+			gotoxy(OTAB,18);
+			cout << "\033[1;38m[4].\033[0m Cargar Partida\n";
+			gotoxy(OTAB,19);
+			cout << "\033[1;38m[5].\033[0m Instrucciones\n";
+			gotoxy(OTAB,20);
+			cout << "\033[1;38m[6].\033[0m Información\n";
+			gotoxy(OTAB,21);
+			cout << "\033[1;38m[7].\033[0m Salir\n";
+			input = menuXY(15,7);
+			switch(input){
+				case 1:
+					humanoVShumano();
+					break;
+				case 2:
+					humanoVSbot();
+					break;
+				case 3:
+					botVSbot();
+					break;
+				case 4:
+					cargarPartida();
+					break;
+				case 5:
+					instrucciones();
+					break;
+				case 6:
+					clearScreen();
+					info();
+					break;
+				case 7:
+					salir();
+					aux = false;
+					break;
+				}
+			}
 	return (1);
 }
