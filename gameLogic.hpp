@@ -117,11 +117,13 @@ class Tablero{
 			turno = 0;
 			historialDeJugadas.push_back("Partida iniciada " + fecha() + " a las: " + momentoActual());
 		};
-		Tablero(list<string> historialDeJugadasGuardado){
+		Tablero(list<string> historialDeJugadasGuardado, string tableroGuardado[][8]){
 
 			string STRING_AUX;
 			char CHAR_AUX;
 			list<string>::iterator iterador = historialDeJugadasGuardado.begin();
+			list<string>::iterator iterador2 = historialDeJugadas.begin();
+
 			while( iterador != historialDeJugadasGuardado.end() ){
 				// metiendo elemento por elemento el historial guardado en el historial local
 				historialDeJugadas.push_back( (*iterador) );
@@ -131,13 +133,17 @@ class Tablero{
 			STRING_AUX = historialDeJugadasGuardado.back();
 			CHAR_AUX = (char) STRING_AUX[0];
 
-
-			// si en la ultima jugada registrada
-			// el primer caracter es R, es que el ultimo en jugar fueron las rojas
 			if( CHAR_AUX == *"R"){
 				turno = 1;
 			}else{
 				turno = 0;
+			}
+
+			// generando el tablero en base del tablero  guardado
+			for(short i=0;i<8;i++){
+				for(short j=0;j<8;j++){
+					tablero[i][j] = tableroGuardado[i][j];
+				}
 			}
 
 		};
@@ -583,6 +589,7 @@ void Tablero::guardarPartida(){
 
 	string NOMBRE;
 	string FULLROUTE;
+	string FULLROUTE_TABLERO;
 	list<string>::iterator iterador = historialDeJugadas.begin();	// creando el iterador para la lista del historial
 
 	clearScreen();
@@ -591,19 +598,29 @@ void Tablero::guardarPartida(){
 	cout << "Introduzca el nombre con el cual desea guardar su partida: " << endl;
 	cin >> NOMBRE;
 	FULLROUTE	= "partidas-guardadas/" + NOMBRE + ".txt";
-	ofstream archivo(FULLROUTE.c_str()); // creando el archivo donde se almacenará la partida
+	FULLROUTE_TABLERO = "partidas-guardadas/" + NOMBRE + "Tablero.txt";
 
+	// guardando el historial
+	ofstream archivo(FULLROUTE.c_str()); // creando el archivo donde se almacenará la partida
 	while( iterador != historialDeJugadas.end() ){
 		// insertando en el archivo, el historial, linea por linea
 		archivo << (*iterador) << endl;
 		iterador++;
 	}
-
 	archivo.close();
+
+	// guardando el tablero
+	ofstream archivo2(FULLROUTE_TABLERO.c_str());
+	for(short i=0;i<8;i++){
+		for(short j=0;j<8;j++){
+			archivo2 << tablero[i][j] << " ";
+		}
+		archivo2 << "\n";
+	}
+	archivo2.close();
+
 	gotoxy(60,25);
 	cout << "Partida guardada exitosamente. (" << NOMBRE << ".txt)" << endl;
-	PressEnterToContinue();
-	menu();
 
 	return;
 }
@@ -1184,20 +1201,24 @@ void cargarPartida(){
 
 	string NOMBRE;
 	string FULLROUTE;
+	string FULLROUTE_TABLERO;
 	string linea;
 	list<string> historialGuardado;
 	ifstream archivo;
+	ifstream archivo2;
 
 	clearScreen();
 	gotoxy(45,10);
 
 	cout << "Ingrese el nombre de la partida a cargar: " << endl;
+	gotoxy(45,11);
 	cin >> NOMBRE;
 	FULLROUTE	= "partidas-guardadas/" + NOMBRE + ".txt";
+	FULLROUTE_TABLERO = "partidas-guardadas/" + NOMBRE + "Tablero.txt";
 
 	// abriendo el archivo
 	archivo.open(FULLROUTE.c_str()); // leyendo el archivo suministrado
-	if(archivo.is_open()){
+	if(archivo){
 		gotoxy(45,15);
 		cout << "Archivo cargado exitosamente" << endl;
 		while( getline(archivo, linea) ){
@@ -1205,25 +1226,34 @@ void cargarPartida(){
 			historialGuardado.push_back(linea);
 		}
 		archivo.close();
+
+		archivo2.open(FULLROUTE_TABLERO.c_str());
+		// leer el archivo y almacenar el tablero guardado en el tablero local
+		archivo2.close();
+
+		gotoxy(45,16);
+		cout << "Presione 'Enter' para continuar con su partida";
+		PressEnterToContinue();
+		PressEnterToContinue();
+		// Tablero tablero = Tablero(historialGuardado);
+		//
+		// do{
+		// 	clearScreen();
+		// 	tablero.imprimirTablero();
+		// 	tablero.imprimirPiezas();
+		// 	tablero.imprimirOtrosDatos();
+		// 	tablero.imprimirHistorialJugadas();
+		// 	tablero.seleccionarPieza(piezaBlanca);
+		// }while(true);
+
 	}else{
 		gotoxy(45,15);
 		cout << "No existe esa partida guardada" << endl;
-		return;
+		gotoxy(45,16);
+		cout << "Presione 'Enter' para volver";
+		PressEnterToContinue();
+		PressEnterToContinue();
 	}
-	// mientras no haya llegado al final del archivo
-	// (lo está recorriendo por lineas)
-
-
-	Tablero tablero = Tablero(historialGuardado);
-
-	do{
-		clearScreen();
-		tablero.imprimirTablero();
-		tablero.imprimirPiezas();
-		tablero.imprimirOtrosDatos();
-		tablero.imprimirHistorialJugadas();
-		tablero.seleccionarPieza(piezaBlanca);
-	}while(true);
 }
 void info(){
 	short aux = 0;
