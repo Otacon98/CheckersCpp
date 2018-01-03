@@ -1204,8 +1204,10 @@ void cargarPartida(){
 	string FULLROUTE_TABLERO;
 	string linea;
 	list<string> historialGuardado;
+	string tableroGuardado[8][8];
 	ifstream archivo;
 	ifstream archivo2;
+
 
 	clearScreen();
 	gotoxy(45,10);
@@ -1229,13 +1231,16 @@ void cargarPartida(){
 
 		archivo2.open(FULLROUTE_TABLERO.c_str());
 		// leer el archivo y almacenar el tablero guardado en el tablero local
+		// y guardarlo en tableroGuardado
 		archivo2.close();
 
 		gotoxy(45,16);
 		cout << "Presione 'Enter' para continuar con su partida";
 		PressEnterToContinue();
 		PressEnterToContinue();
-		// Tablero tablero = Tablero(historialGuardado);
+		//una vez que todo esté listo, descomentar esto y ya deberia de estar completa la funcionalidad
+		// de cargar una partida
+		// Tablero tablero = Tablero(historialGuardado, tableroGuardado);
 		//
 		// do{
 		// 	clearScreen();
