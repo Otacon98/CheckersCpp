@@ -131,12 +131,10 @@ class Tablero{
 			STRING_AUX = historialDeJugadasGuardado.back();
 			CHAR_AUX = (char) STRING_AUX[0];
 
-			//mano voy a llorar, cuando corrijas esto, borra este comentario, thx bye <3
-
 
 			// si en la ultima jugada registrada
 			// el primer caracter es R, es que el ultimo en jugar fueron las rojas
-			if( CHAR_AUX == "R"){
+			if( CHAR_AUX == *"R"){
 				turno = 1;
 			}else{
 				turno = 0;
