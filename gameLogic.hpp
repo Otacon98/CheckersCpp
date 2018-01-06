@@ -1,14 +1,12 @@
 #include <iostream>
 #include <cstdio>
 #include <time.h>
-#include <wchar.h>
+#include <cstdlib>
 #include <unistd.h>
 #include <termios.h>
 #include <string>
 #include <list>
-#include <string>
 #include <math.h>
-#include <cassert>
 #include <fstream>
 
 using namespace std;
@@ -21,8 +19,8 @@ static struct termios old, new_;
 #define KEY_F2 19
 #define ENTER 10
 #define ESC 27
-#define CTAB 38//Posicion en el eje X del cursor
-#define OTAB 43//Posicion en el eje X de las opciones del menu
+#define CTAB 38 //Posicion en el eje X del cursor
+#define OTAB 43 //Posicion en el eje X de las opciones del menu
 #define cursor "\033[1;38m</>\033[0m"
 #define dos_segundos 2000000
 
@@ -66,7 +64,6 @@ void salir(){
 }
 string to_string( int x ) {	// convierte int a string para trabajar de forma sencilla la forma en que se guardará el historial de jugadas
   int length = snprintf( NULL, 0, "%d", x );
-  assert( length >= 0 );
   char* buf = new char[length + 1];
   snprintf( buf, length + 1, "%d", x );
   string str( buf );
@@ -260,14 +257,14 @@ void Tablero::imprimirOtrosDatos() {
 		gotoxy(80, 5);
 		if (turno % 2 == 0){
 
-			cout << "Turno de las " << piezaBlanca << " Rojas ";
+			cout << "Turno de las " << piezaBlanca << " Verdes ";
 
 			gotoxy(80, 6);
 			cout << "Le quedan " << contarPiezas(piezaBlanca) << " piezas";
 
 		}	else {
 
-			cout << "Turno de las " << piezaNegra << " Verdes ";
+			cout << "Turno de las " << piezaNegra << " Rojas ";
 
 			gotoxy(80, 6);
 			cout << "Le quedan: " << contarPiezas(piezaNegra) << " piezas";
@@ -353,9 +350,9 @@ void Tablero::agregarAlHistorialDeJugadas(string jugador, int x, int y, int newX
 	string momento = momentoActual();
 	string jugada;
 	if(turno % 2 == 0){
-		jugada = "Rojas - " + momento + ": (" + to_string(y) + "," + to_string(x) + ") -> (" + to_string(newY) + "," + to_string(newX) + ")";
-	}else{
 		jugada = "Verdes - " + momento + ": (" + to_string(y) + "," + to_string(x) + ") -> (" + to_string(newY) + "," + to_string(newX) + ")";
+	}else{
+		jugada = "Rojas - " + momento + ": (" + to_string(y) + "," + to_string(x) + ") -> (" + to_string(newY) + "," + to_string(newX) + ")";
 	}
 
 	historialDeJugadas.push_back(jugada); // agrega de ultimo la ultima jugada dentro de la lista
@@ -373,7 +370,7 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 	if (tablero[newX][newY] != vacio){
 		return false;
 	}
-	
+
 	if (tablero[newX][newY] != vacio)
 		return false;
 
@@ -396,7 +393,7 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 			return true;
 		}
 	}
-	
+
 	if(pieza == piezaBlanca && x < newX)
 		return false;
 
@@ -405,20 +402,20 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 
 	if ( (abs(x - newX)) == 2 && (abs(y - newY)) == 2)//Que pasa si es una reyna?
 		return(comerPieza(x, y, newX, newY));//Llamado a la funcion comer pieza donda la magia ocurre.
-	
+
 	if ( (abs(y - newY)) != 1 )
 		return false;
 
 	if ( (abs(y - newY)) != 1 )
 		return false;
-		
+
 	/*shitposting V2.0: Valide todo en la funcion "comer pieza"... para capturar la pieza te tienes
 	 que situar en la posicion donde va a caer la pieza...*/
-	
+
 	// si la jugada que realizó no involucra comer, se mueve normalmente hacia la posicion.
-	
+
 	agregarAlHistorialDeJugadas(pieza, x, y, newX, newY);
-	
+
 	if (dama(newX) && pieza == piezaBlanca){
 		tablero[newX][newY] = damaBlanca;
 	}else if (dama(newX) && pieza == piezaNegra){
@@ -493,7 +490,7 @@ bool Tablero::comerPieza(int x, int y, int newX, int newY){
 	return true;
 }
 bool Tablero::dama(int x){
-	
+
 	if (turno%2 == 0){
 		if (x==0)
 			return true;
@@ -504,7 +501,7 @@ bool Tablero::dama(int x){
 	return false;
 }
 bool Tablero::dama(int x, int y, int newX, int newY){//Esta funcion solo busca si hay objetos enmedio del camino...
-	
+
 	gotoxy(1,1);cout<<"Mamalo";
 	string pieza, pieza_;
 
