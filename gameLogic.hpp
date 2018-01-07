@@ -28,8 +28,8 @@ static struct termios old, new_;
 
 string piezaBlanca="\E[42m░\033[0m";
 string piezaNegra="\E[41m░\033[0m";
-string damaBlanca="\E[32m░\033[0m";
-string damaNegra="\E[31m░\033[0m";
+string damaBlanca="\E[31m░\033[0m";
+string damaNegra="\E[32m░\033[0m";
 string negro="\E[47m░\033[0m";
 string blanco="\E[40m░\033[0m";
 string selector="\E[46m░\033[0m";
@@ -277,7 +277,7 @@ void Tablero::imprimirOtrosDatos() {
 		cout << "Esperando jugada";
 
 		gotoxy(75,34);
-		cout << "\033[1;38m[DEL] Salir  [F1] Guardar Partida\033[0m";
+		cout << "\033[1;38m[DEL] Salir  [TAB] Guardar Partida\033[0m";
 }
 void Tablero::imprimirLinea(string color) {
 
@@ -285,7 +285,6 @@ void Tablero::imprimirLinea(string color) {
 }
 void Tablero::imprimirHistorialJugadas(){
 	// imprime en el mismo espacio las ultimas 5 jugadas
-//	int i = 0;
 	list<string>::reverse_iterator iterador = historialDeJugadas.rbegin(); // para poder imprimir el log en pantalla (del final para el inicio)
 
 	gotoxy(80,20);
@@ -578,7 +577,6 @@ void Tablero::seleccionarPieza(string pieza){
 		imprimirCursor( (i*7) + 1 , (j*4) +1 ,selector);
 		KEY = getch();
 		fflush(stdin);
-		// agregar si el usuario presiona ESC o F1
 
 		if( (i+j) % 2 == 0)
 			imprimirCursor((i*7) + 1, (j*4) +1,blanco);
@@ -701,7 +699,7 @@ void Tablero::guardarPartida(){
 	gotoxy(80,16);cin >> NOMBRE;
 	gotoxy(80,15);cout<<"                            ";
 	gotoxy(80,16);cout<<"                            ";
-	
+
 	FULLROUTE	= "partidas-guardadas/" + NOMBRE + ".txt";
 	FULLROUTE_TABLERO = "partidas-guardadas/" + NOMBRE + "Tablero.txt";
 
@@ -718,14 +716,18 @@ void Tablero::guardarPartida(){
 	ofstream archivo2(FULLROUTE_TABLERO.c_str());
 	for(short i=0;i<8;i++){
 		for(short j=0;j<8;j++){
-			archivo2 << tablero[i][j] << " ";
+			archivo2 << tablero[i][j];
 		}
 		archivo2 << "\n";
 	}
 	archivo2.close();
+	gotoxy(80,15);cout << "                                         ";
 	gotoxy(80,15);cout << "\033[1;38mPARTIDA GUARDADA EXITOSAMENTE\033[0m";
-	getch();
+	gotoxy(80,16);cout << "Presione 'Enter' para continuar..";
+	PressEnterToContinue();
+	PressEnterToContinue();
 	gotoxy(80,15);cout<<"                                 ";
+	gotoxy(80,16);cout<<"                                 ";
 	return;
 }
 
@@ -1335,26 +1337,28 @@ void cargarPartida(){
 		archivo.close();
 
 		archivo2.open(FULLROUTE_TABLERO.c_str());
-		// leer el archivo y almacenar el tablero guardado en el tablero local
-		// y guardarlo en tableroGuardado
+		for(int i = 0; i<8; i++){
+			for(int j = 0; j<8; j++){
+
+			}
+		}
 		archivo2.close();
 
 		gotoxy(45,16);
 		cout << "Presione 'Enter' para continuar con su partida";
 		PressEnterToContinue();
 		PressEnterToContinue();
-		//una vez que todo esté listo, descomentar esto y ya deberia de estar completa la funcionalidad
-		// de cargar una partida
-		// Tablero tablero = Tablero(historialGuardado, tableroGuardado);
-		//
-		// do{
-		// 	clearScreen();
-		// 	tablero.imprimirTablero();
-		// 	tablero.imprimirPiezas();
-		// 	tablero.imprimirOtrosDatos();
-		// 	tablero.imprimirHistorialJugadas();
-		// 	tablero.seleccionarPieza(piezaBlanca);
-		// }while(true);
+
+		Tablero tablero = Tablero(historialGuardado, tableroGuardado);
+
+		do{
+			clearScreen();
+			tablero.imprimirTablero();
+			tablero.imprimirPiezas();
+			tablero.imprimirOtrosDatos();
+			tablero.imprimirHistorialJugadas();
+			tablero.seleccionarPieza(piezaBlanca);
+		}while(true);
 
 	}else{
 		gotoxy(45,15);
@@ -1391,7 +1395,14 @@ void info(){
 	}while(aux != 10);
 	clearScreen();
 }
+void setup(){
+	char esc_start[] = { 0x1b, ']', '0', ';', 0 };
+  char esc_end[] = { 0x07, 0 };
+  cout << esc_start << "CheckersCpp" << esc_end;
+
+}
 int menu(){
+		setup();
 		bool aux = true;
 		short input;
 		resizeTerminal();
