@@ -19,10 +19,12 @@ static struct termios old, new_;
 #define KEY_F2 19
 #define ENTER 10
 #define ESC 27
-#define CTAB 38 //Posicion en el eje X del cursor
+#define DEL 127
+#define TAB 9 //???
 #define OTAB 43 //Posicion en el eje X de las opciones del menu
 #define cursor "\033[1;38m</>\033[0m"
 #define dos_segundos 2000000
+
 
 string piezaBlanca="\E[42m░\033[0m";
 string piezaNegra="\E[41m░\033[0m";
@@ -257,14 +259,14 @@ void Tablero::imprimirOtrosDatos() {
 		gotoxy(80, 5);
 		if (turno % 2 == 0){
 
-			cout << "Turno de las " << piezaBlanca << " Verdes ";
+			cout << "Turno de las " << piezaBlanca << "\033[1;38m VERDES \033[0m";
 
 			gotoxy(80, 6);
 			cout << "Le quedan " << contarPiezas(piezaBlanca) << " piezas";
 
 		}	else {
 
-			cout << "Turno de las " << piezaNegra << " Rojas ";
+			cout << "Turno de las " << piezaNegra << "\033[1;38m ROJAS \033[0m";
 
 			gotoxy(80, 6);
 			cout << "Le quedan: " << contarPiezas(piezaNegra) << " piezas";
@@ -275,7 +277,7 @@ void Tablero::imprimirOtrosDatos() {
 		cout << "Esperando jugada";
 
 		gotoxy(75,34);
-		cout << "[ESC] Salir  [F1] Guardar Partida";
+		cout << "\033[1;38m[DEL] Salir  [F1] Guardar Partida\033[0m";
 }
 void Tablero::imprimirLinea(string color) {
 
@@ -283,7 +285,7 @@ void Tablero::imprimirLinea(string color) {
 }
 void Tablero::imprimirHistorialJugadas(){
 	// imprime en el mismo espacio las ultimas 5 jugadas
-	int i = 0;
+//	int i = 0;
 	list<string>::reverse_iterator iterador = historialDeJugadas.rbegin(); // para poder imprimir el log en pantalla (del final para el inicio)
 
 	gotoxy(80,20);
@@ -384,7 +386,6 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 		return false;
 
 	if ( tablero[x][y] == damaBlanca || tablero[x][y] == damaNegra){
-		gotoxy(1,1);cout<<"selecionaste la dama";
 		if (dama(x, y, newX, newY)){
 			agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
 			tablero[newX][newY] = tablero[x][y];
@@ -464,7 +465,12 @@ bool Tablero::comerPieza(int x, int y, int newX, int newY){
 	if (flag) return false;//Si no se baja la bandera, no es posible comer a pieza...
 
 	agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
-	tablero[newX][newY] = tablero[x][y];
+	if (dama(newX) && pieza == piezaBlanca){
+		tablero[newX][newY] = damaBlanca;
+	}else if (dama(newX) && pieza == piezaNegra){
+		tablero[newX][newY] = damaNegra;
+	}else
+		tablero[newX][newY] = tablero[x][y];
 	tablero[x][y] = vacio;
 	tablero[auxX][auxY] = vacio;//Eliminando al enemigo...
 
@@ -502,7 +508,6 @@ bool Tablero::dama(int x){
 }
 bool Tablero::dama(int x, int y, int newX, int newY){//Esta funcion solo busca si hay objetos enmedio del camino...
 
-	gotoxy(1,1);cout<<"Mamalo";
 	string pieza, pieza_;
 
 	if (turno%2!=0){
@@ -517,7 +522,6 @@ bool Tablero::dama(int x, int y, int newX, int newY){//Esta funcion solo busca s
 		return true;
 
 	if ((newY < y) && (newX > x)){
-		gotoxy(1,1);cout<<"(newY < y) && (newX > x)";
 		if (tablero[x+1][y-1] == vacio){//La matriz esta invertida...
 			return(dama(x+1, y-1, newX, newY));
 		}else if (((tablero[x+1][y-1] == pieza) || (tablero[x+1][y-1] == pieza_)) && (x+2 == newX) && (y-2 == newY) ){
@@ -526,7 +530,6 @@ bool Tablero::dama(int x, int y, int newX, int newY){//Esta funcion solo busca s
 		}
 	}
 	if ((newY > y) && (newX > x)){
-		gotoxy(1,1);cout<<"(newY > y) && (newX > x)";
 		if (tablero[x+1][y+1] == vacio){//La matriz esta invertida...
 			return(dama(x+1, y+1, newX, newY));
 		}else if (((tablero[x+1][y+1] == pieza) || (tablero[x+1][y+1] == pieza_)) && (x+2 == newX) && (y+2 == newY) ){
@@ -535,7 +538,6 @@ bool Tablero::dama(int x, int y, int newX, int newY){//Esta funcion solo busca s
 		}
 	}
 	if ((newY < y) && (newX < x)){
-		gotoxy(1,1);cout<<"(newY < y) && (newX < x)";
 		if (tablero[x-1][y-1] == vacio){//La matriz esta invertida...
 			return(dama(x-1, y-1, newX, newY));
 		}else if (((tablero[x-1][y-1] == pieza) || (tablero[x-1][y-1] == pieza_)) && (x-2 == newX) && (y-2 == newY) ){
@@ -544,7 +546,6 @@ bool Tablero::dama(int x, int y, int newX, int newY){//Esta funcion solo busca s
 		}
 	}
 	if ((newY > y) && (newX < x)){
-		gotoxy(1,1);cout<<"(newY > y) && (newX < x)";
 		if (tablero[x-1][y+1] == vacio){//La matriz esta invertida...
 			return(dama(x-1, y+1, newX, newY));
 		}else if (((tablero[x-1][y+1] == pieza) || (tablero[x-1][y+1] == pieza_)) && (x-2 == newX) && (y+2 == newY) ){
@@ -567,12 +568,16 @@ int Tablero::contarPiezas(string pieza) {
 }
 void Tablero::seleccionarPieza(string pieza){
 
-	int KEY, i=0, j=0;
+	int KEY, i, j;
 	bool cent;
+	if(turno%2!=0)
+		i=j=0;
+	else
+		i=j=7;
 	do{
 		imprimirCursor( (i*7) + 1 , (j*4) +1 ,selector);
 		KEY = getch();
-
+		fflush(stdin);
 		// agregar si el usuario presiona ESC o F1
 
 		if( (i+j) % 2 == 0)
@@ -599,6 +604,16 @@ void Tablero::seleccionarPieza(string pieza){
 			case KEY_DE:
 				i++;
 				if(i>7) i=0;
+				break;
+			case DEL:
+				gotoxy(80,15);cout<<"\033[1;38m¿DESEA SALIR DE LA PARTIDA?\033[0m";
+				gotoxy(80,16);cout<<"\033[1;38mPRESIONE 'DEL' PARA SALIR\033[0m";
+				if(DEL==getch()) menu();
+				gotoxy(80,15);cout<<"                            ";
+				gotoxy(80,16);cout<<"                            ";
+				break;
+			case TAB:
+				guardarPartida();
 				break;
 			case ENTER:
 				int auxI= i, auxJ = j;
@@ -646,17 +661,17 @@ void Tablero::seleccionarPieza(string pieza){
 					}
 				};
 
-			imprimirCursor((auxI*7) + 1,(auxJ*4) +1,blanco);//Borra el cursor temporal para evitar problemas posteriores.
-			if(!moverPieza(auxJ, auxI, j , i)){
-				gotoxy(80,15);
-				cout << "Error, jugada invalida";
-			}else{
-				cent = false;
-				gotoxy(80,3);
-				cout << "                           ";
-				break;
+				imprimirCursor((auxI*7) + 1,(auxJ*4) +1,blanco);//Borra el cursor temporal para evitar problemas posteriores.
+				if(!moverPieza(auxJ, auxI, j , i)){
+					gotoxy(80,15);
+					cout << "\033[1;38mJUGADA INVALIDA\033[0m";
+				}else{
+					cent = false;
+					gotoxy(80,3);
+					cout << "                           ";
+				}
+				break;//break del switch case...
 			}
-		}
 	}while(cent);
 }
 string Tablero::momentoActual() {
@@ -682,11 +697,11 @@ void Tablero::guardarPartida(){
 	string FULLROUTE_TABLERO;
 	list<string>::iterator iterador = historialDeJugadas.begin();	// creando el iterador para la lista del historial
 
-	clearScreen();
-	gotoxy(60,20);
-
-	cout << "Introduzca el nombre con el cual desea guardar su partida: " << endl;
-	cin >> NOMBRE;
+	gotoxy(80,15);cout<<"\033[1;38mINGRESE EL NOMBRE DE LA PARTIDA:\033[0m";
+	gotoxy(80,16);cin >> NOMBRE;
+	gotoxy(80,15);cout<<"                            ";
+	gotoxy(80,16);cout<<"                            ";
+	
 	FULLROUTE	= "partidas-guardadas/" + NOMBRE + ".txt";
 	FULLROUTE_TABLERO = "partidas-guardadas/" + NOMBRE + "Tablero.txt";
 
@@ -708,10 +723,9 @@ void Tablero::guardarPartida(){
 		archivo2 << "\n";
 	}
 	archivo2.close();
-
-	gotoxy(60,25);
-	cout << "Partida guardada exitosamente. (" << NOMBRE << ".txt)" << endl;
-
+	gotoxy(80,15);cout << "\033[1;38mPARTIDA GUARDADA EXITOSAMENTE\033[0m";
+	getch();
+	gotoxy(80,15);cout<<"                                 ";
 	return;
 }
 
@@ -1146,6 +1160,7 @@ bool Tablero::botMovimientoEducadoAleatorio(string companero, string enemigo){
 			}
 		}while(bandera == 0);
 	}
+	return(true);//QUE LADILLAAAA
 }
 void Tablero::turnoBot(string companero, string enemigo){
 
@@ -1180,7 +1195,7 @@ void Tablero::turnoBot(string companero, string enemigo){
 //###################    Opciones del menu    ###################
 //###############################################################
 
-int menuXY(int a, int A){
+int menuXY(int CTAB,int a, int A){
 	int KEY;
 	int y=a;
 	A=A+a;
@@ -1400,7 +1415,7 @@ int menu(){
 			cout << "\033[1;38m[6].\033[0m Información\n";
 			gotoxy(OTAB,21);
 			cout << "\033[1;38m[7].\033[0m Salir\n";
-			input = menuXY(15,7);
+			input = menuXY(38,15,7);
 			switch(input){
 				case 1:
 					humanoVShumano();
