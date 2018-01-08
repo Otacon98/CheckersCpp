@@ -64,7 +64,8 @@ void salir(){
 	cout << ". " << endl;
 	usleep(2000000);
 }
-string to_string( int x ) {	// convierte int a string para trabajar de forma sencilla la forma en que se guardará el historial de jugadas
+
+string toString( int x ) {	// convierte int a string para trabajar de forma sencilla la forma en que se guardará el historial de jugadas
   int length = snprintf( NULL, 0, "%d", x );
   char* buf = new char[length + 1];
   snprintf( buf, length + 1, "%d", x );
@@ -141,7 +142,7 @@ class Tablero{
 				turno = 0;
 			}
 
-			// generando el tablero en base del tablero  guardado
+			// generando el tablero en base del tablero guardado
 			for(short i=0;i<8;i++){
 				for(short j=0;j<8;j++){
 					tablero[i][j] = tableroGuardado[i][j];
@@ -188,7 +189,7 @@ void Tablero::imprimirTablero(){
 	int flag = 0;
 	for (int k = 1; k < 33; k+=4) {
 		if (flag++ % 2 == 0)
-		for (int i = 1; i < 57; i+=7) {
+		for (int i = 1; i < 57; i+=7)
 			for (int j = 0; j < 4; j++) {
 
 				gotoxy(i,j+k);
@@ -197,11 +198,9 @@ void Tablero::imprimirTablero(){
 					imprimirLinea(blanco);
 				else
 					imprimirLinea(negro);
-
 			}
-		} // Hendry mamalo, borra este beta cuando lo leas, mmlo otra vez.
 		else
-		for (int i = 1; i < 57; i+=7) {
+		for (int i = 1; i < 57; i+=7)
 			for (int j = 0; j < 4; j++) {
 
 				gotoxy(i,j+k);
@@ -211,7 +210,7 @@ void Tablero::imprimirTablero(){
 				else
 					imprimirLinea(negro);
 			}
-		}
+
 	}
 
 	short i = 4;
@@ -351,9 +350,9 @@ void Tablero::agregarAlHistorialDeJugadas(string jugador, int x, int y, int newX
 	string momento = momentoActual();
 	string jugada;
 	if(turno % 2 == 0){
-		jugada = "Verdes - " + momento + ": (" + to_string(y) + "," + to_string(x) + ") -> (" + to_string(newY) + "," + to_string(newX) + ")";
+		jugada = "Verdes - " + momento + ": (" + toString(y) + "," + toString(x) + ") -> (" + toString(newY) + "," + toString(newX) + ")";
 	}else{
-		jugada = "Rojas - " + momento + ": (" + to_string(y) + "," + to_string(x) + ") -> (" + to_string(newY) + "," + to_string(newX) + ")";
+		jugada = "Rojas - " + momento + ": (" + toString(y) + "," + toString(x) + ") -> (" + toString(newY) + "," + toString(newX) + ")";
 	}
 
 	historialDeJugadas.push_back(jugada); // agrega de ultimo la ultima jugada dentro de la lista
@@ -400,7 +399,7 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 	if(pieza == piezaNegra && x > newX)
 		return false;
 
-	if ( (abs(x - newX)) == 2 && (abs(y - newY)) == 2)//Que pasa si es una reyna?
+	if ( (abs(x - newX)) == 2 && (abs(y - newY)) == 2)//Que pasa si es una dama?
 		return(comerPieza(x, y, newX, newY));//Llamado a la funcion comer pieza donda la magia ocurre.
 
 	if ( (abs(y - newY)) != 1 )
