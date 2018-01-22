@@ -555,9 +555,15 @@ bool Tablero::dama(int x, int y, int newX, int newY){//Esta funcion solo busca s
 }
 int Tablero::contarPiezas(string pieza) {
 	int count = 0;
+	string aux = "";
+	if(turno % 2 == 0){
+		aux = damaBlanca;
+	}else{
+		aux = damaNegra;
+	}
 	for (int i = 0; i < 8; i++) {
 		for (int k = 0; k < 8; k++) {
-			if (tablero[i][k] == pieza) {
+			if (tablero[i][k] == pieza || tablero[i][k] == aux) {
 				count++;
 			}
 		}
@@ -1225,6 +1231,17 @@ int menuXY(int CTAB,int a, int A){
 	}while (KEY!=ENTER);
 	return (y-a+1);
 }
+void ganador(string pieza){
+	gotoxy(50,20);
+	if(pieza == "\E[42m░\033[0m"){
+		cout << "GANARON LAS VERDES";
+		PressEnterToContinue();
+	}
+	else{
+		cout << "GANARON LAS ROJAS";
+		PressEnterToContinue();
+	}
+}
 void humanoVShumano(){
 
 	//char coordH;
@@ -1233,6 +1250,14 @@ void humanoVShumano(){
 
 	do{
 		clearScreen();
+		if(tablero.contarPiezas(piezaBlanca) == 0){
+			ganador(piezaNegra);
+			break;
+		}
+		if(tablero.contarPiezas(piezaNegra) == 0){
+			ganador(piezaBlanca);
+			break;
+		}
 		tablero.imprimirTablero();
 		tablero.imprimirPiezas();
 		tablero.imprimirOtrosDatos();
