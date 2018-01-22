@@ -120,7 +120,8 @@ class Tablero{
 			turno = 0;
 			historialDeJugadas.push_back("Partida iniciada " + fecha() + " a las: " + momentoActual());
 		};
-		Tablero(list<string> historialDeJugadasGuardado, string tableroGuardado[][8]){
+
+		Tablero(list<string> historialDeJugadasGuardado, string FULLROUTE){
 
 			string STRING_AUX;
 			char CHAR_AUX;
@@ -142,12 +143,10 @@ class Tablero{
 				turno = 0;
 			}
 
-			// generando el tablero en base del tablero guardado
-			for(short i=0;i<8;i++){
-				for(short j=0;j<8;j++){
-					tablero[i][j] = tableroGuardado[i][j];
-				}
-			}
+			FILE * fichero  = fopen(FULLROUTE.c_str(), "rb");
+			fread(tablero,sizeof(tablero),1,fichero);
+			fclose(fichero);
+			fflush(fichero);
 
 		};
 
@@ -726,6 +725,7 @@ void Tablero::guardarPartida(){
 	FILE *fichero = fopen(FULLROUTE_TAB.c_str(), "wb");
 	fwrite(tablero, sizeof(tablero),1,fichero);
 	fclose(fichero);
+	fflush(fichero);
 
 	gotoxy(80,15);cout << "                                         ";
 	gotoxy(80,15);cout << "\033[1;38mPARTIDA GUARDADA EXITOSAMENTE\033[0m";
@@ -1348,7 +1348,7 @@ void cargarPartida(){
 	gotoxy(45,11);
 	cin >> NOMBRE;
 	FULLROUTE	= "partidas-guardadas/" + NOMBRE + ".txt";
-	FULLROUTE_TABLERO = "partidas-guardadas/" + NOMBRE + "Tablero.txt";
+	FULLROUTE_TABLERO = "partidas-guardadas/" + NOMBRE + "Tablero.obj";
 
 	// abriendo el archivo
 	archivo.open(FULLROUTE.c_str()); // leyendo el archivo suministrado
@@ -1361,14 +1361,12 @@ void cargarPartida(){
 		}
 		archivo.close();
 
-
+		Tablero tablero = Tablero(historialGuardado, FULLROUTE_TABLERO);
 
 		gotoxy(45,16);
 		cout << "Presione 'Enter' para continuar con su partida";
 		PressEnterToContinue();
 		PressEnterToContinue();
-
-		Tablero tablero = Tablero(historialGuardado, tableroGuardado);
 
 		do{
 			clearScreen();
