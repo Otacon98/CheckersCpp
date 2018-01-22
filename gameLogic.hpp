@@ -383,18 +383,6 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 	if (newX == x && newY == y)
 		return false;
 
-	if(pieza == piezaBlanca && x < newX)
-		return false;
-
-	if(pieza == piezaNegra && x > newX)
-		return false;
-
-	if ( (abs(x - newX)) != 1 )
-		return false;
-
-	if ( (abs(y - newY)) != 1 )
-		return false;
-
 	if ( tablero[x][y] == damaBlanca || tablero[x][y] == damaNegra){
 		if (dama(x, y, newX, newY)){
 			agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
@@ -405,10 +393,20 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 		}
 	}
 
+	if(pieza == piezaBlanca && x < newX)
+		return false;
+
+	if(pieza == piezaNegra && x > newX)
+		return false;
 
 	if ( (abs(x - newX)) == 2 && (abs(y - newY)) == 2)//Que pasa si es una dama?
 		return(comerPieza(x, y, newX, newY));//Llamado a la funcion comer pieza donda la magia ocurre.
 
+	if ( (abs(y - newY)) != 1 )
+		return false;
+
+	if ( (abs(y - newY)) != 1 )
+		return false;
 
 	/*shitposting V2.0: Valide todo en la funcion "comer pieza"... para capturar la pieza te tienes
 	 que situar en la posicion donde va a caer la pieza...*/
@@ -720,6 +718,7 @@ void Tablero::guardarPartida(){
 		iterador++;
 	}
 	archivo.close();
+
 
 	// guardando el tablero
 	FILE *fichero = fopen(FULLROUTE_TAB.c_str(), "wb");
@@ -1360,13 +1359,7 @@ void cargarPartida(){
 		}
 		archivo.close();
 
-		archivo2.open(FULLROUTE_TABLERO.c_str());
-		for(int i = 0; i<8; i++){
-			for(int j = 0; j<8; j++){
 
-			}
-		}
-		archivo2.close();
 
 		gotoxy(45,16);
 		cout << "Presione 'Enter' para continuar con su partida";
@@ -1445,7 +1438,7 @@ int menu(){
 			gotoxy(OTAB,18);
 			cout << "\033[1;38m[4].\033[0m Cargar Partida\n";
 			gotoxy(OTAB,19);
-			cout << "\033[1;38md[5].\033[0m Instrucciones\n";
+			cout << "\033[1;38m[5].\033[0m Instrucciones\n";
 			gotoxy(OTAB,20);
 			cout << "\033[1;38m[6].\033[0m Información\n";
 			gotoxy(OTAB,21);
