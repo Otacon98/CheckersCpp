@@ -557,9 +557,9 @@ int Tablero::contarPiezas(string pieza) {
 	int count = 0;
 	string aux = "";
 	if(turno % 2 == 0){
-		aux = damaBlanca;
-	}else{
 		aux = damaNegra;
+	}else{
+		aux = damaBlanca;
 	}
 	for (int i = 0; i < 8; i++) {
 		for (int k = 0; k < 8; k++) {
@@ -697,7 +697,7 @@ void Tablero::guardarPartida(){
 
 	string NOMBRE;
 	string FULLROUTE;
-	string FULLROUTE_TABLERO;
+	string FULLROUTE_TAB;
 	list<string>::iterator iterador = historialDeJugadas.begin();	// creando el iterador para la lista del historial
 
 	gotoxy(80,15);cout<<"\033[1;38mINGRESE EL NOMBRE DE LA PARTIDA:\033[0m";
@@ -706,7 +706,9 @@ void Tablero::guardarPartida(){
 	gotoxy(80,16);cout<<"                            ";
 
 	FULLROUTE	= "partidas-guardadas/" + NOMBRE + ".txt";
-	FULLROUTE_TABLERO = "partidas-guardadas/" + NOMBRE + "Tablero.txt";
+	FULLROUTE_TAB = "partidas-guardadas/" + NOMBRE + "Tablero.obj";
+	//char FULLROUTE_TABLERO;
+	//strcpy(FULLROUTE_TABLERO,FULLROUTE_TAB.c_str());
 
 	// guardando el historial
 	ofstream archivo(FULLROUTE.c_str()); // creando el archivo donde se almacenará la partida
@@ -718,14 +720,10 @@ void Tablero::guardarPartida(){
 	archivo.close();
 
 	// guardando el tablero
-	ofstream archivo2(FULLROUTE_TABLERO.c_str());
-	for(short i=0;i<8;i++){
-		for(short j=0;j<8;j++){
-			archivo2 << tablero[i][j];
-		}
-		archivo2 << "\n";
-	}
-	archivo2.close();
+	FILE *fichero = fopen(FULLROUTE_TAB.c_str(), "wb");
+	fwrite(tablero, sizeof(tablero),1,fichero);
+	fclose(fichero);
+
 	gotoxy(80,15);cout << "                                         ";
 	gotoxy(80,15);cout << "\033[1;38mPARTIDA GUARDADA EXITOSAMENTE\033[0m";
 	gotoxy(80,16);cout << "Presione 'Enter' para continuar..";
