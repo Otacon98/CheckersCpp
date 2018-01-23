@@ -388,12 +388,6 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 	if(pieza == piezaNegra && x > newX)
 		return false;
 
-	if ( (abs(x - newX)) != 1 )
-		return false;
-
-	if ( (abs(y - newY)) != 1 )
-		return false;
-
 	if ( tablero[x][y] == damaBlanca || tablero[x][y] == damaNegra){
 		if (dama(x, y, newX, newY)){
 			agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
@@ -407,6 +401,12 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 
 	if ( (abs(x - newX)) == 2 && (abs(y - newY)) == 2)//Que pasa si es una dama?
 		return(comerPieza(x, y, newX, newY));//Llamado a la funcion comer pieza donda la magia ocurre.
+
+			if ( (abs(x - newX)) != 1 )
+				return false;
+
+			if ( (abs(y - newY)) != 1 )
+				return false;
 
 
 	/*shitposting V2.0: Valide todo en la funcion "comer pieza"... para capturar la pieza te tienes
@@ -430,12 +430,13 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 bool Tablero::comerPieza(int x, int y, int newX, int newY){
 
 	//Aqui empieza la mememagia...
-	string pieza;//La pieza que se tiene que comer
+	string pieza, pieza_;//La pieza que se tiene que comer
 	int auxX, auxY;//Posicion axuliar, dnde esta el enemigo...
 	bool flag=true;//Si ya se guardo la posicion, etonces no sigue buscando, porsi habian mas de dos posible jugadas para comer...
 
 	if (turno % 2 != 0){
 		pieza = piezaBlanca;
+		pieza_ = damaBlanca;
 
 		if ((y > newY) && (tablero[x+1][y-1] == pieza) && flag){//La matriz esta invertida...
 			auxX=x+1;
@@ -449,6 +450,7 @@ bool Tablero::comerPieza(int x, int y, int newX, int newY){
 		}
 	}else{
 		pieza = piezaNegra;
+		pieza_ = damaNegra;
 		if ((y > newY) && (tablero[x-1][y-1] == pieza) && flag){
 			auxX=x-1;
 			auxY=y-1;
@@ -1438,7 +1440,7 @@ int menu(){
 			gotoxy(OTAB,18);
 			cout << "\033[1;38m[4].\033[0m Cargar Partida\n";
 			gotoxy(OTAB,19);
-			cout << "\033[1;38md[5].\033[0m Instrucciones\n";
+			cout << "\033[1;38m[5].\033[0m Instrucciones\n";
 			gotoxy(OTAB,20);
 			cout << "\033[1;38m[6].\033[0m Información\n";
 			gotoxy(OTAB,21);
