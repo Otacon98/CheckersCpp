@@ -26,8 +26,8 @@ static struct termios old, new_;
 #define dos_segundos 2000000
 
 
-string piezaBlanca="\E[42m░\033[0m";
-string piezaNegra="\E[41m░\033[0m";
+string piezaNegra="\E[42m░\033[0m";
+string piezaBlanca="\E[41m░\033[0m";
 string damaBlanca="\E[31m░\033[0m";
 string damaNegra="\E[32m░\033[0m";
 string negro="\E[47m░\033[0m";
@@ -257,14 +257,14 @@ void Tablero::imprimirOtrosDatos() {
 		gotoxy(80, 5);
 		if (turno % 2 == 0){
 
-			cout << "Turno de las " << piezaBlanca << "\033[1;38m VERDES \033[0m";
+			cout << "Turno de las " << piezaBlanca;
 
 			gotoxy(80, 6);
 			cout << "Le quedan " << contarPiezas(piezaBlanca) << " piezas";
 
 		}	else {
 
-			cout << "Turno de las " << piezaNegra << "\033[1;38m ROJAS \033[0m";
+			cout << "Turno de las " << piezaNegra;
 
 			gotoxy(80, 6);
 			cout << "Le quedan: " << contarPiezas(piezaNegra) << " piezas";
@@ -382,15 +382,18 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 	if (newX == x && newY == y)
 		return false;
 
-	if(pieza == piezaBlanca && x < newX)
+	if (pieza==piezaNegra && tablero[x][y]==damaBlanca)
 		return false;
 
-	if(pieza == piezaNegra && x > newX)
+	if (pieza==piezaBlanca && tablero[x][y]==damaNegra)
 		return false;
 
 	if ( tablero[x][y] == damaBlanca || tablero[x][y] == damaNegra){
 		if (dama(x, y, newX, newY)){
-			agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
+			if (tablero[x][y] == damaBlanca)
+				agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
+			else
+				agregarAlHistorialDeJugadas(piezaNegra, x, y, newX, newY);
 			tablero[newX][newY] = tablero[x][y];
 			tablero[x][y] = vacio;
 			turno++;
@@ -398,6 +401,12 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 		}
 	}
 
+
+	if(pieza == piezaBlanca && x < newX)
+		return false;
+
+	if(pieza == piezaNegra && x > newX)
+		return false;
 
 	if ( (abs(x - newX)) == 2 && (abs(y - newY)) == 2)//Que pasa si es una dama?
 		return(comerPieza(x, y, newX, newY));//Llamado a la funcion comer pieza donda la magia ocurre.
@@ -414,7 +423,6 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 
 	// si la jugada que realizó no involucra comer, se mueve normalmente hacia la posicion.
 
-	agregarAlHistorialDeJugadas(pieza, x, y, newX, newY);
 
 	if (dama(newX) && pieza == piezaBlanca){
 		tablero[newX][newY] = damaBlanca;
@@ -422,6 +430,8 @@ bool Tablero::moverPieza(int x, int y, int newX, int newY) {
 		tablero[newX][newY] = damaNegra;
 	}else
 		tablero[newX][newY] = tablero[x][y];
+
+	agregarAlHistorialDeJugadas(pieza, x, y, newX, newY);
 
 	tablero[x][y] = vacio;
 	turno++;
@@ -438,12 +448,12 @@ bool Tablero::comerPieza(int x, int y, int newX, int newY){
 		pieza = piezaBlanca;
 		pieza_ = damaBlanca;
 
-		if ((y > newY) && (tablero[x+1][y-1] == pieza) && flag){//La matriz esta invertida...
+		if ((y > newY) && (tablero[x+1][y-1] == pieza || tablero[x+1][y-1] == pieza_) && flag){//La matriz esta invertida...
 			auxX=x+1;
 			auxY=y-1;
 			flag = false;
 		}
-		if ((y < newY) && (tablero[x+1][y+1] == pieza) && flag){
+		if ((y < newY) && (tablero[x+1][y+1] == pieza || tablero[x+1][y+1] == pieza_) && flag){
 			auxX=x+1;
 			auxY=y+1;
 			flag = false;
@@ -451,12 +461,12 @@ bool Tablero::comerPieza(int x, int y, int newX, int newY){
 	}else{
 		pieza = piezaNegra;
 		pieza_ = damaNegra;
-		if ((y > newY) && (tablero[x-1][y-1] == pieza) && flag){
+		if ((y > newY) && (tablero[x-1][y-1] == pieza || tablero[x-1][y-1] == pieza_) && flag){
 			auxX=x-1;
 			auxY=y-1;
 			flag = false;
 		}
-		if ((y < newY) && (tablero[x-1][y+1] == pieza) && flag){
+		if ((y < newY) && (tablero[x-1][y+1] == pieza || tablero[x-1][y+1] == pieza_) && flag){
 			auxX=x-1;
 			auxY=y+1;
 			flag = false;
@@ -465,11 +475,12 @@ bool Tablero::comerPieza(int x, int y, int newX, int newY){
 
 	if (flag) return false;//Si no se baja la bandera, no es posible comer a pieza...
 
-	agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
 	if (dama(newX) && pieza == piezaBlanca){
-		tablero[newX][newY] = damaBlanca;
+		tablero[newX][newY] = damaNegra;	
+		agregarAlHistorialDeJugadas(piezaNegra, x, y, newX, newY);
 	}else if (dama(newX) && pieza == piezaNegra){
-		tablero[newX][newY] = damaNegra;
+		agregarAlHistorialDeJugadas(piezaBlanca, x, y, newX, newY);
+		tablero[newX][newY] = damaBlanca;
 	}else
 		tablero[newX][newY] = tablero[x][y];
 	tablero[x][y] = vacio;
@@ -479,16 +490,16 @@ bool Tablero::comerPieza(int x, int y, int newX, int newY){
 	//Comer doble.... //Aqui es que se pone feo...
 	//Hendryxx1: Comer triple es una jugada vailda?, porque si no lo es es necesario una banera aqui...
 	if (turno%2 == 0){
-		if ( (tablero[newX-1][newY-1] == pieza ) && ( tablero[newX-2][newY-2] == vacio ))//Verifica que alla via libre.
+		if ( (tablero[newX-1][newY-1] == pieza ) && ( tablero[newX-2][newY-2] == vacio ) && newX-2>=0 && newY-2>=0 )//Verifica que alla via libre.
 			comerPieza(newX, newY, newX-2, newY-2);
-		else if ( (tablero[newX-1][newY+1] == pieza) && (tablero[newX-2][newY+2] == vacio))
+		else if ( (tablero[newX-1][newY+1] == pieza) && (tablero[newX-2][newY+2] == vacio) && newX-2>=0 && newY+2<=7)
 			comerPieza(newX, newY, newX-2, newY+2);
 		else
 			turno++;
 	}else if (turno%2 != 0){
-		if ( (tablero[newX+1][newY+1] == pieza ) && ( tablero[newX+2][newY+2] == vacio) )//Verifica que alla via libre.
+		if ( (tablero[newX+1][newY+1] == pieza ) && ( tablero[newX+2][newY+2] == vacio) && newX+2<=7 && newY+2<=7)//Verifica que alla via libre.
 			comerPieza( newX, newY, newX+2, newY+2 );
-		else if ( (tablero[newX+1][newY-1] == pieza ) && ( tablero[newX+2][newY-2] == vacio ))
+		else if ( (tablero[newX+1][newY-1] == pieza ) && ( tablero[newX+2][newY-2] == vacio ) && newX+2<=7 && newY-2>=0)
 			comerPieza( newX, newY, newX+2, newY-2 );
 		else
 			turno++;//Solo incrementa el turno cando no tiene que mas comer...
@@ -666,8 +677,10 @@ void Tablero::seleccionarPieza(string pieza){
 							break;
 					}
 				};
-
-				imprimirCursor((auxI*7) + 1,(auxJ*4) +1,blanco);//Borra el cursor temporal para evitar problemas posteriores.
+				if(tablero[auxI*7+1][auxJ*4+1] == blanco)
+					imprimirCursor((auxI*7) + 1,(auxJ*4) +1,blanco);//Borra el cursor temporal para evitar problemas posteriores.
+				else
+					imprimirCursor((auxI*7) + 1,(auxJ*4) +1,blanco);
 				if(!moverPieza(auxJ, auxI, j , i)){
 					gotoxy(80,15);
 					cout << "\033[1;38mJUGADA INVALIDA\033[0m";
@@ -1467,8 +1480,8 @@ int menu(){
 					info();
 					break;
 				case 7:
-					salir();
-					aux = false;
+					clearScreen();
+					return 0;
 					break;
 				}
 			}
